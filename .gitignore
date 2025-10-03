@@ -1,0 +1,19 @@
+# Python venv
+.venv/
+.idea/
+
+# IDE editor settings
+.vscode/
+.ironvenv/
+
+# Build artifacts
+build/
+cmake-build-*/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Keep gitignore itself and workflows
+!.gitignore
+!.github/
