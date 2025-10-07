@@ -1,10 +1,11 @@
 # Python venv
 .venv/
-.idea/
+ironvenv/
+ironenv/
 
 # IDE editor settings
 .vscode/
-.ironvenv/
+.idea/
 
 # Build artifacts
 build/

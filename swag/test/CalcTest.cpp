@@ -1,5 +1,5 @@
-#include "swag/Calc.hpp"
-#include <gtest/gtest.h>
+#include <swag/Calc.hpp>
+#include <swag/portability/GTest.hpp>
 
 TEST(Calc, AddsWithinBounds) {
 	EXPECT_EQ(swag::clamp_add(2, 3, 0, 10), 5);

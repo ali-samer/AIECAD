@@ -28,6 +28,7 @@ target_include_directories(swag_test_support
 target_link_libraries(swag_test_support
     PUBLIC
         swag_lib
+        swag_deps
         ${LIBGMOCK_LIBRARIES}
 )
 
@@ -35,7 +36,6 @@ include(cmake/utils/Functions.cmake)
 
 swag_define_tests(
     DIRECTORY test/
-        TEST dummy_calc_test
-        SOURCES
-            CalcTest.cpp
+        TEST dummy_calc_test SOURCES CalcTest.cpp
+        TEST xrt_smoke_test SOURCES XRTSmokeTest.cpp
 )
