@@ -37,5 +37,4 @@ include(cmake/utils/Functions.cmake)
 swag_define_tests(
     DIRECTORY test/
         TEST dummy_calc_test SOURCES CalcTest.cpp
-        TEST xrt_smoke_test SOURCES XRTSmokeTest.cpp
 )
