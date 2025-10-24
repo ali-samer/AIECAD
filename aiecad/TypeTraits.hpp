@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace swag {
+namespace aiecad {
 
 template < class... >
 inline constexpr bool always_false = false;
@@ -29,4 +29,4 @@ struct detector_or<Default, std::void_t<Op<Args...>>, Op, Args...> {
 
 template < class Default, template < class... > class Op, class... Args>
 using detector_or_t = typename detector_or<Default, void, Op, Args...>::type;
-} // namespace swag
+} // namespace aiecad

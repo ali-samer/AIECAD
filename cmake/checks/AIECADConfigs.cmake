@@ -3,18 +3,18 @@ include(CheckIncludeFileCXX)
 include(CheckCXXSourceRuns)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*")
-    list(APPEND SWAG_CXX_FLAGS -Wno-psabi)
+    list(APPEND AIECAD_CXX_FLAGS -Wno-psabi)
 endif ()
 
 if (NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    check_include_file_cxx(jemalloc/jemalloc.h SWAG_USE_JEMALLOC)
+    check_include_file_cxx(jemalloc/jemalloc.h AIECAD_USE_JEMALLOC)
 endif ()
 
 # Detect weak-symbol support via a tiny try-run.
-# Result: SWAG_HAVE_WEAK_SYMBOLS (BOOL)
+# Result: AIECAD_HAVE_WEAK_SYMBOLS (BOOL)
 
 if (MSVC)
-    set(SWAG_HAVE_WEAK_SYMBOLS OFF CACHE BOOL "" FORCE)
+    set(AIECAD_HAVE_WEAK_SYMBOLS OFF CACHE BOOL "" FORCE)
 else()
     set(_saved_req_flags         "${CMAKE_REQUIRED_FLAGS}")
     set(_saved_req_link_options  "${CMAKE_REQUIRED_LINK_OPTIONS}")
@@ -41,7 +41,7 @@ else()
             } else {
             return 0;
             }
-        }]] SWAG_HAVE_WEAK_SYMBOLS)
+        }]] AIECAD_HAVE_WEAK_SYMBOLS)
 
     set(CMAKE_REQUIRED_FLAGS         "${_saved_req_flags}")
     set(CMAKE_REQUIRED_LINK_OPTIONS  "${_saved_req_link_options}")

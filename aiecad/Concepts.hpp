@@ -1,8 +1,8 @@
 #pragma once
 
-namespace swag {
+namespace aiecad {
 
 template < typename T >
 concept is_complete_type = requires { sizeof(T); };
 
-} // namespace swag
+} // namespace aiecad

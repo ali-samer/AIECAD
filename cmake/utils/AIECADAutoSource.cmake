@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# swag_auto_source(
+# aiecad_auto_source(
 #   OUT_VAR         <result_variable>           # Required
 #   DIRECTORIES     <dir1> [<dir2> ...]         # Required: one or more source directories
 #
@@ -19,7 +19,7 @@
 #   with optional depth limiting and symlink following.
 #
 # Example:
-#   swag_auto_sources(
+#   aiecad_auto_sources(
 #     OUT_VAR         kernal_source_files
 #     DIRECTORIES     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 #                     "${CMAKE_CURRENT_SOURCE_DIR}/kernels"
@@ -31,7 +31,7 @@
 #   )
 # ------------------------------------------------------------------------------
 
-function(swag_auto_source)
+function(aiecad_auto_source)
     set(options FOLLOW_SYMLINKS)
     set(one_value_args OUT_VAR PATTERN EXCLUDE_PATTERN TRAVERSE DEPTH FAIL_MODE)
     set(multi_value_args DIRECTORIES EXTENSIONS EXCLUDE_DIRECTORIES)
@@ -41,12 +41,12 @@ function(swag_auto_source)
 
     if (NOT ARG_OUT_VAR)
         message(FATAL_ERROR "`OUT_VAR` is required. see following syntax: \
-                            \nswag_auto_source(\
+                            \naiecad_auto_source(\
                                 OUT_VAR <my_output_var ...remaining args)")
     endif ()
     if (NOT ARG_DIRECTORIES)
         message(FATAL_ERROR "`DIRECTORIES` is required. see following syntax: \
-                            \nswag_auto_source(\
+                            \naiecad_auto_source(\
                                 DIRECTORIES <dir1> [<dir2>...] ...remaining args)")
     endif ()
     if(NOT DEFINED ARG_TRAVERSE)

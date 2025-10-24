@@ -1,4 +1,4 @@
-function(swag_define_tests)
+function(aiecad_define_tests)
     set(directory_count 0)
     set(test_count 0)
     set(currentArg 0)
@@ -71,11 +71,11 @@ function(swag_define_tests)
                             endif()
                         elseif (argumentState EQUAL 1)
                             list(APPEND test_${cur_test}_headers
-                                    "${SWAG_DIR}/${directory_${cur_dir}_name}${ARGV${currentArg}}"
+                                    "${AIECAD_DIR}/${directory_${cur_dir}_name}${ARGV${currentArg}}"
                             )
                         elseif (argumentState EQUAL 2)
                             list(APPEND test_${cur_test}_sources
-                                    "${SWAG_DIR}/${directory_${cur_dir}_name}${ARGV${currentArg}}"
+                                    "${AIECAD_DIR}/${directory_${cur_dir}_name}${ARGV${currentArg}}"
                             )
                         else()
                             message(FATAL_ERROR "Unknown argument state!")
@@ -104,18 +104,18 @@ function(swag_define_tests)
     while (cur_test LESS test_count)
         set(cur_test_name ${test_${cur_test}_name})
         set(cur_dir_name ${directory_${test_${cur_test}_directory}_name})
-        if ("BROKEN" IN_LIST test_${cur_test}_tag AND NOT SWAG_BUILD_BROKEN_TESTS)
-            message("Skipping broken test ${cur_dir_name}${cur_test_name}, enable with SWAG_BUILD_BROKEN_TESTS")
-        elseif ("SLOW" IN_LIST test_${cur_test}_tag AND NOT SWAG_BUILD_SLOW_TESTS)
-            message("Skipping slow test ${cur_dir_name}${cur_test_name}, enable with SWAG_BUILD_SLOW_TESTS")
-        elseif ("HANGING" IN_LIST test_${cur_test}_tag AND NOT SWAG_BUILD_HANGING_TESTS)
-            message("Skipping hanging test ${cur_dir_name}${cur_test_name}, enable with SWAG_BUILD_HANGING_TESTS")
-        elseif ("WINDOWS_DISABLED" IN_LIST test_${cur_test}_tag AND WIN32 AND NOT SWAG_BUILD_WINDOWS_DISABLED)
-            message("Skipping windows disabled test ${cur_dir_name}${cur_test_name}, enable with SWAG_BUILD_WINDOWS_DISABLED")
-        elseif ("APPLE_DISABLED" IN_LIST test_${cur_test}_tag AND APPLE AND NOT SWAG_BUILD_APPLE_DISABLED)
-            message("Skipping apple disabled test ${cur_dir_name}${cur_test_name}, enable with SWAG_BUILD_APPLE_DISABLED")
-        elseif (${test_${cur_test}_is_benchmark} AND NOT SWAG_BUILD_BENCHMARKS)
-            message("Skipping benchmark ${cur_dir_name}${cur_test_name}, enable with SWAG_BUILD_BENCHMARKS")
+        if ("BROKEN" IN_LIST test_${cur_test}_tag AND NOT AIECAD_BUILD_BROKEN_TESTS)
+            message("Skipping broken test ${cur_dir_name}${cur_test_name}, enable with AIECAD_BUILD_BROKEN_TESTS")
+        elseif ("SLOW" IN_LIST test_${cur_test}_tag AND NOT AIECAD_BUILD_SLOW_TESTS)
+            message("Skipping slow test ${cur_dir_name}${cur_test_name}, enable with AIECAD_BUILD_SLOW_TESTS")
+        elseif ("HANGING" IN_LIST test_${cur_test}_tag AND NOT AIECAD_BUILD_HANGING_TESTS)
+            message("Skipping hanging test ${cur_dir_name}${cur_test_name}, enable with AIECAD_BUILD_HANGING_TESTS")
+        elseif ("WINDOWS_DISABLED" IN_LIST test_${cur_test}_tag AND WIN32 AND NOT AIECAD_BUILD_WINDOWS_DISABLED)
+            message("Skipping windows disabled test ${cur_dir_name}${cur_test_name}, enable with AIECAD_BUILD_WINDOWS_DISABLED")
+        elseif ("APPLE_DISABLED" IN_LIST test_${cur_test}_tag AND APPLE AND NOT AIECAD_BUILD_APPLE_DISABLED)
+            message("Skipping apple disabled test ${cur_dir_name}${cur_test_name}, enable with AIECAD_BUILD_APPLE_DISABLED")
+        elseif (${test_${cur_test}_is_benchmark} AND NOT AIECAD_BUILD_BENCHMARKS)
+            message("Skipping benchmark ${cur_dir_name}${cur_test_name}, enable with AIECAD_BUILD_BENCHMARKS")
         else()
             add_executable(${cur_test_name}
                     ${test_${cur_test}_headers}
@@ -145,23 +145,23 @@ function(swag_define_tests)
                 # tests can be run easily from Visual Studio without having to change
                 # the working directory for each test individually.
                 file(
-                        COPY "${SWAG_DIR}/${cur_dir_name}${test_${cur_test}_content_dir}"
-                        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/swag/${cur_dir_name}${test_${cur_test}_content_dir}"
+                        COPY "${AIECAD_DIR}/${cur_dir_name}${test_${cur_test}_content_dir}"
+                        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/aiecad/${cur_dir_name}${test_${cur_test}_content_dir}"
                 )
                 add_custom_command(TARGET ${cur_test_name} POST_BUILD COMMAND
                         ${CMAKE_COMMAND} ARGS -E copy_directory
-                        "${SWAG_DIR}/${cur_dir_name}${test_${cur_test}_content_dir}"
-                        "$<TARGET_FILE_DIR:${cur_test_name}>/swag/${cur_dir_name}${test_${cur_test}_content_dir}"
+                        "${AIECAD_DIR}/${cur_dir_name}${test_${cur_test}_content_dir}"
+                        "$<TARGET_FILE_DIR:${cur_test_name}>/aiecad/${cur_dir_name}${test_${cur_test}_content_dir}"
                         COMMENT "Copying test content for ${cur_test_name}" VERBATIM
                 )
             endif()
             # Strip the tailing test directory name for the folder name.
             string(REPLACE "test/" "" test_dir_name "${cur_dir_name}")
             set_property(TARGET ${cur_test_name} PROPERTY FOLDER "Tests/${test_dir_name}")
-            # TODO: add swag_test_support target
-            target_link_libraries(${cur_test_name} PRIVATE swag_test_support)
-            # TODO: add `apply_swag_compile_options_to_target()` function
-            # apply_swag_compile_options_to_target(${cur_test_name})
+            # TODO: add aiecad_test_support target
+            target_link_libraries(${cur_test_name} PRIVATE aiecad_test_support)
+            # TODO: add `apply_aiecad_compile_options_to_target()` function
+            # apply_aiecad_compile_options_to_target(${cur_test_name})
         endif()
         math(EXPR cur_test "${cur_test} + 1")
     endwhile()

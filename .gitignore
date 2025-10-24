@@ -15,6 +15,12 @@ cmake-build-*/
 .DS_Store
 Thumbs.db
 
+# Workflow files
+.pre-commit-config.yaml
+
 # Keep gitignore itself and workflows
 !.gitignore
 !.github/
+
+# Git backup (temporarily added to gitignore)
+.git.bak

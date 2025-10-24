@@ -1,5 +1,5 @@
 #pragma once
 
-#include <swag/Portability.h>
+#include <aiecad/Portability.h>
 
 #include <gmock/gmock.h>

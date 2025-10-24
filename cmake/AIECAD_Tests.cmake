@@ -9,32 +9,32 @@ else ()
     set(HAVE_CMAKE_GTEST OFF)
 endif ()
 
-add_library(swag_test_support
-    ${SWAG_DIR}/test/common/TestMain.cpp
+add_library(aiecad_test_support
+    ${AIECAD_DIR}/test/common/TestMain.cpp
 )
 
-target_compile_definitions(swag_test_support
+target_compile_definitions(aiecad_test_support
     PUBLIC
         ${LIBGMOCK_DEFINES}
 )
 
-target_include_directories(swag_test_support
+target_include_directories(aiecad_test_support
     SYSTEM
     PUBLIC
         ${LIBGMOCK_INCLUDE_DIR}
         ${GTEST_INCLUDE_DIRS}
 )
 
-target_link_libraries(swag_test_support
+target_link_libraries(aiecad_test_support
     PUBLIC
-        swag_lib
-        swag_deps
+        aiecad_lib
+        aiecad_deps
         ${LIBGMOCK_LIBRARIES}
 )
 
 include(cmake/utils/Functions.cmake)
 
-swag_define_tests(
+aiecad_define_tests(
     DIRECTORY test/
         TEST dummy_calc_test SOURCES CalcTest.cpp
 )
