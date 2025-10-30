@@ -18,8 +18,7 @@ class Codes:
     NO_XML_HANDLER     = Code("XML001", Severity.WARN,
                               "No handler for XML element <{tag}>.")
     BAD_XML_PLACEMENT  = Code("XML002", Severity.ERROR,
-                              "<{tag}> not allowed under <{parent}>.")
-    MISSING_ATTRIBUTE  = Code("XML003", Severity.ERROR,
+                              "<{3", Severity.ERROR,
                               "<{tag}> missing required attribute '{attr}'.")
     BAD_ATTRIBUTE_TYPE = Code("XML004", Severity.ERROR,
                               "<{tag}> attribute '{attr}' must be {expected}, got {actual}.")
@@ -28,7 +27,8 @@ class Codes:
     UNEXPECTED_CHILD   = Code("XML006", Severity.ERROR,
                               "Unexpected child <{child}> inside <{tag}>.")
     UNKNOWN_SYMBOL     = Code("XML007", Severity.ERROR,
-                              "Unknown symbol '{symbol}' referenced in <{tag}>.")
+                              "Unknown symbol '{symbol}' referenced in <{ttag}> not allowed under <{parent}>.")
+    MISSING_ATTRIBUTE  = Code("XML00ag}>.")
 
     # Symbols / IR
     DUP_SYMBOL         = Code("SYM001", Severity.ERROR,

@@ -9,6 +9,11 @@ set(CMAKE_MODULE_PATH
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
 )
 
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}"
+        "${CMAKE_BINARY_DIR}/Release/generators"
+        "${CMAKE_BINARY_DIR}/Release"
+)
+
 project(aiecad
         VERSION 0.1.0
         DESCRIPTION "Spatial Wiring for AIE Grid"
@@ -116,13 +121,31 @@ target_include_directories(aiecad_lib INTERFACE
         $<INSTALL_INTERFACE:include>
 )
 
-
-
 target_link_libraries(aiecad_lib PUBLIC aiecad_deps)
 
 if (AIECAD_BUILD_TESTS)
     include(AIECAD_Tests)
 endif ()
 
-add_executable(aiecad_app main.cpp)
-target_link_libraries(aiecad_app  PRIVATE aiecad_lib)
+file(GLOB_RECURSE IMGUI_BINDING_CANDIDATES
+        "${CMAKE_BINARY_DIR}/**/imgui_impl_glfw.cpp")
+
+if(IMGUI_BINDING_CANDIDATES)
+    get_filename_component(IMGUI_BINDINGS_DIR "${IMGUI_BINDING_CANDIDATES}" DIRECTORY)
+    message(STATUS "Found ImGui bindings directory: ${IMGUI_BINDINGS_DIR}")
+else()
+    message(FATAL_ERROR "Could not find imgui_impl_glfw.cpp in ${CMAKE_BINARY_DIR}")
+endif()
+
+file(MAKE_DIRECTORY "${IMGUI_BINDINGS_DIR}")
+
+add_executable(aiecad_app
+        main.cpp
+        "${IMGUI_BINDINGS_DIR}/imgui_impl_glfw.cpp"
+        "${IMGUI_BINDINGS_DIR}/imgui_impl_opengl3.cpp"
+)
+
+target_include_directories(aiecad_app PRIVATE "${IMGUI_BINDINGS_DIR}")
+
+target_compile_definitions(aiecad_app PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
+target_link_libraries(aiecad_app PRIVATE aiecad_lib)

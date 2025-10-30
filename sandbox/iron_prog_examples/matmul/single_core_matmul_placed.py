@@ -66,6 +66,7 @@ def main():
         print(ctx.module)
 
 
+@iron.jit(placed=True)
 def custom_matmul(
         dev, M, K, N, m, k, n, dtype_in_str, dtype_out_str, b_col_maj, emulate_bf16_mmul_with_bfp16, trace_size
 ):

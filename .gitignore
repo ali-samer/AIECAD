@@ -24,3 +24,7 @@ Thumbs.db
 
 # Git backup (temporarily added to gitignore)
 .git.bak
+
+# Misc. files
+CMakePresets.json.bak
+imgui.ini
