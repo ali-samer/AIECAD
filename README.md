@@ -71,7 +71,7 @@ conan profile show default
 In the project root, where a file named `conanfile.txt` exists, run the following command:
 
 ```bash
-conan install . --output-folder=build --build=missing
+conan install . --build=missing
 ```
 
 This will:
@@ -83,12 +83,16 @@ This will:
 
 ### 5. Build the project
 
-Run the following commands:
+After installing the required dependencies through Conan, run the following commands to build and run the project:
 
 ```bash
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build .
+cmake --preset=dev
+cmake --build --preset=dev
+```
+then to run the project:
+
+```bash
+./build/aiecad_app
 ```
 
 ---
