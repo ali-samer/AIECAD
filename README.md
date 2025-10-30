@@ -68,7 +68,7 @@ conan profile show default
 
 ### 4. Install dependencies from the Conan configuration file
 
-In the project root, where a file named `conanfile.txt` exists, run the following command:
+In the project root, where a file named `conanfile.py` exists, run the following command:
 
 ```bash
 conan install . --build=missing
