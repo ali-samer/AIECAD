@@ -1,7 +1,6 @@
 option(USE_CMAKE_GOOGLE_TEST_INTEGRATION "If enabled, use the google test integration included in CMake." ON)
 
 find_package(GMock MODULE REQUIRED)
-find_package(GTest MODULE REQUIRED)
 if (USE_CMAKE_GOOGLE_TEST_INTEGRATION)
     include(GoogleTest OPTIONAL RESULT_VARIABLE HAVE_CMAKE_GTEST)
     enable_testing()
@@ -35,6 +34,6 @@ target_link_libraries(aiecad_test_support
 include(cmake/utils/Functions.cmake)
 
 aiecad_define_tests(
-    DIRECTORY test/
-        TEST dummy_calc_test SOURCES CalcTest.cpp
+    DIRECTORY test/core/
+        TEST StressTestLogger SOURCES LoggerTest.cpp
 )

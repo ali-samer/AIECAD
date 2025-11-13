@@ -2,30 +2,32 @@
 
 #include <string>
 #include <cstdint>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 namespace aiecad {
-
 struct WindowSpecification;
 struct ApplicationSpecification;
 
 struct WindowSpecification {
-	std::string title;
-	int width;
-	int height;
-	bool resizable;
-	int swap_interval;
-	float dpi_scale;
-	std::uint32_t spec_version;
+	std::string   title;
+	uint32_t      width;
+	uint32_t      height;
+	bool          resizable;
+	bool          vSync;
+	float         dpiScale;
+	std::uint32_t specVersion; // maybe not needed
 };
 
 struct ApplicationSpecification {
-	std::string name;
-	WindowSpecification window_spec;
+	std::string name{ "AIECAD" };
+	fs::path    sandboxRoot{ };
+	bool        devMode{ false };
+	bool        maximized{ false };
 
-	// TODO <ApplicationSpecification : struct> : method body was made on fly. Must change to something meaningful
-	explicit operator bool() const {
-		return window_spec.title.empty();
-	}
+	WindowSpecification window_spec{
+		.title = name, .width = 1600, .height = 900,
+		.resizable = true, .vSync = true, .dpiScale = 1.f,
+	};
 };
-
 } // namespace aiecad

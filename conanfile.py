@@ -14,14 +14,23 @@ class Deps(ConanFile):
     generators = "CMakeDeps", "CMakeToolchain"
 
     def requirements(self):
-        self.requires("imgui/[~1.89]")
+        self.requires("imgui/1.92.4-docking")
         self.requires("glfw/[~3.3]")
         self.requires("glm/[~0.9]")
-        self.requires("spdlog/1.16.0", options={"header_only": True})
+        self.requires("spdlog/1.16.0") #, options={"header_only": True})
+        self.requires("fmt/12.0.0")
         self.requires("glad/[~0.1]")
+        self.requires("gtest/1.17.0")
 
     def layout(self):
         cmake_layout(self)
+
+    def configure(self):
+        self.options["imgui"].with_glfw = True
+        self.options["imgui"].with_opengl3 = True
+
+        self.options["spdlog"].header_only = True
+        self.options["spdlog"].fmt_external = False
 
     def generate(self):
         imgui = self.dependencies.get("imgui")
