@@ -7,9 +7,11 @@ function(aiecad_build_sandbox)
             FAIL_MODE       FATAL_ERROR
     )
 
-    add_executable(panels
-            ${panels_source_files}
-    )
+    set(SANDBOX_DIR "${TOP_DIR}/sandbox")
 
+    add_executable(panels ${panels_source_files})
+    add_executable(event_bus_practice "${SANDBOX_DIR}/main.cpp")
+
+    target_link_libraries(event_bus_practice PRIVATE aiecad_lib)
     target_link_libraries(panels PRIVATE aiecad_lib)
 endfunction()

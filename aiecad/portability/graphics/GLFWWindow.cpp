@@ -89,6 +89,8 @@ void GLFWWindow::init(const WindowSpecification& spec) {
                 ev.width  = data->width;
                 ev.height = data->height;
                 data->eventCallback(ev);
+            } else {
+                AIECAD_CORE_ERROR("Attempted to resize window without callback");
             }
         }
     );
