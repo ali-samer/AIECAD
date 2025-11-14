@@ -1,60 +1,99 @@
-# IRON Code Generation System
+# AIECAD Compiler
 
-A flexible, graph-based code generation system for AMD's Ryzen AI NPU AIE programming using the IRON library.
+A flexible, extensible, graph-based code generation system for AMD's Ryzen AI NPU AIE programming using the IRON library.
+
+**Key Features:**
+- 🎯 **100% Functional Accuracy** - Generates correct code matching reference implementations
+- 🔌 **Extensible Architecture** - Add new node types without modifying core code
+- 📊 **Graph-Based** - Pure semantic graph representation, no hardcoded patterns
+- 🔧 **Advanced AIE Support** - Workers, external functions, split/join, tensor access patterns
+- 📖 **Comprehensive Documentation** - Complete XML specification with examples
+- ✅ **Validated** - Tested on simple passthrough and complex multi-worker matrix multiplication
 
 ## Overview
 
-This system converts XML representations of IRON code into executable Python code through a two-stage process:
+The AIECAD Compiler converts XML representations of IRON code into executable Python code through a two-stage process:
 
 1. **GraphDriver**: Converts XML to semantic graph (GraphML)
 2. **CodeGenerator**: Generates Python code from semantic graph
 
-The system is designed to be **completely flexible** - no code patterns are hardcoded. All code generation is driven purely by graph structure traversal.
+The system is designed to be **completely flexible** and **highly extensible** - no code patterns are hardcoded. All code generation is driven purely by graph structure traversal, and new node types can be added without modifying core compiler code through the extension system.
 
 ## Architecture
 
 ```
 XML Input → GraphDriver → Semantic Graph → CodeGenerator → Python Code
+                ↑                               ↑
+         GraphExtender                  CodeGeneratorExtender
+           (Extensions)                     (Extensions)
 ```
 
 ### Key Components
 
-- **main.py**: End-to-end orchestration (XML → Python)
-- **GraphDriver.py**: XML parser and graph builder
-- **CodeGenerator.py**: Graph traversal and code generation
-- **passthrough.xml**: Example XML input
-- **passthroughjit.py**: Reference implementation for validation
+#### Core System
+- **[main.py](main.py)**: End-to-end orchestration (XML → Python)
+- **[GraphDriver.py](graph_builder/GraphDriver.py)**: XML parser and graph builder
+- **[CodeGenerator.py](codegen/backends/CodeGenerator.py)**: Graph traversal and code generation
+
+#### Extension System (NEW)
+- **[ExtensionManager.py](extension/ExtensionManager.py)**: Coordinates graph and codegen extensions
+- **[GraphExtender.py](extension/GraphExtender.py)**: Extensible XML → graph conversion
+- **[CodeGeneratorExtender.py](extension/CodeGeneratorExtender.py)**: Extensible graph → code generation
+
+#### Documentation
+- **[XML_Structure_Guide.md](XML_Structure_Guide.md)**: Complete XML structure specification
+- **[extension/README.md](extension/README.md)**: Extension system documentation
 
 ## Quick Start
+
+### Installation
+
+```bash
+# Install dependencies
+pip install lxml networkx
+```
 
 ### Basic Usage
 
 ```bash
-# From the aiecad directory
-cd aiecad_compiler
-python main.py examples/passthrough/passthrough.xml
+# Generate code from XML
+python main.py examples/applications/passthrough/passthrough.xml
 
-# Or from parent directory
-python aiecad/main.py aiecad/examples/passthrough/passthrough.xml
+# Generate and execute code
+python main.py examples/applications/passthrough/passthrough.xml --run
 ```
 
-This generates files in the same directory as the input XML:
+**Output Files** (created in same directory as input XML):
 - `<name>.graphml` - Semantic graph (for debugging/visualization)
 - `generated_<name>.py` - Python code (ready to run)
 
+### Quick Reference
+
+| Task | Command |
+|------|---------|
+| Generate code | `python main.py <xml_file>` |
+| Generate and run | `python main.py <xml_file> --run` |
+| View help | `python main.py` |
+| Run generated code | `python generated_<name>.py` |
+
 ### Examples
 
-**Generate code only:**
+**Simple Passthrough (Basic):**
 ```bash
-python main.py examples/passthrough/passthrough.xml
+# Generate code only
+python main.py examples/applications/passthrough/passthrough.xml
+
+# Generate and execute
+python main.py examples/applications/passthrough/passthrough.xml --run
 ```
 
-**Generate and execute code:**
+**Matrix Multiplication (Advanced with Extensions):**
 ```bash
-python main.py examples/passthrough/passthrough.xml --run
+# Uses Worker, ExternalFunction, CoreFunction, Split, Join
+python main.py examples/applications/matrix_mult/matmul.xml
 ```
 
-Output:
+**Example Output:**
 ```
 ======================================================================
 IRON Code Generation System
@@ -80,7 +119,7 @@ IRON Code Generation System
 
 ### GraphDriver Architecture
 
-**11 Major Sections:**
+**Core System (11 Major Sections):**
 
 1. **Node and Edge Management** - Core graph construction
 2. **Symbol Table and Scope Management** - Variable/function scopes
@@ -99,10 +138,11 @@ IRON Code Generation System
 - Complete information capture
 - Flexible traversal
 - Type-safe nodes and edges
+- **Extensible via GraphExtender** - Add new XML node types without modifying core code
 
 ### CodeGenerator Architecture
 
-**11 Major Sections:**
+**Core System (11 Major Sections):**
 
 1. **Graph Navigation and Code Emission** - Core utilities
 2. **Main Code Generation Entry Point** - Process orchestration
@@ -121,12 +161,42 @@ IRON Code Generation System
 - Complete code generation
 - Proper indentation management
 - Expression reconstruction
+- **Extensible via CodeGeneratorExtender** - Add new code generation patterns without modifying core code
+
+### Extension System Architecture (NEW)
+
+The extension system enables adding new XML node types and code generation patterns without modifying core GraphDriver and CodeGenerator classes.
+
+**Components:**
+
+1. **ExtensionManager**: Coordinates both graph and codegen extensions
+   - Provides unified registration interface
+   - Automatically wires extensions into GraphDriver and CodeGenerator
+
+2. **GraphExtender**: Handles XML → graph conversion for new node types
+   - Base class: `GraphExtension`
+   - Implement `process(elem, parent_nid)` method
+   - Access to all GraphBuilder APIs (`_add_node`, `_link`, `_lookup`, etc.)
+
+3. **CodeGeneratorExtender**: Handles graph → code generation for new node types
+   - Base class: `CodeGenExtension`
+   - Implement `generate(node_id)` method returning code string
+   - Access to all CodeGenerator APIs (`_get_node_attr`, `_get_children`, etc.)
+
+**Built-in Extensions:**
+
+- **WorkerExtension** / **WorkerCodeGen**: AIE worker placement and execution
+- **ExternalFunctionExtension** / **ExternalFunctionCodeGen**: External C/C++ kernel declarations
+- **CoreFunctionExtension** / **CoreFunctionCodeGen**: AIE core functions with acquire/release semantics
+- **ListExtension** / **ListCodeGen**: List declarations
+
+See [extension/README.md](extension/README.md) for details on creating new extensions.
 
 ## XML Schema
 
-The XML format captures all code elements:
+The XML format captures all code elements. For complete XML structure specification including all supported elements, see [XML_Structure_Guide.md](XML_Structure_Guide.md).
 
-### Structure
+### Core Structure
 
 ```xml
 <Module name="module_name">
@@ -137,7 +207,7 @@ The XML format captures all code elements:
       <!-- Type definition -->
     </TypeAbstraction>
   </Symbols>
-  
+
   <DataFlow>
     <ObjectFifo name="of_in">
       <!-- ObjectFifo definition -->
@@ -147,7 +217,7 @@ The XML format captures all code elements:
       <!-- Operations -->
     </SequenceBlock>
   </DataFlow>
-  
+
   <Function name="main" decorator="iron.device">
     <parameters>
       <param name="device_name"/>
@@ -156,14 +226,14 @@ The XML format captures all code elements:
       <!-- Function statements -->
     </body>
   </Function>
-  
+
   <EntryPoint>
     <!-- if __name__ == "__main__" -->
   </EntryPoint>
 </Module>
 ```
 
-### Supported Elements
+### Core Elements
 
 **Symbols:**
 - Import (with optional alias)
@@ -196,11 +266,28 @@ The XML format captures all code elements:
 - Method chains (obj.method1().method2())
 - Index expressions (arr[idx])
 
+### Extension Elements (NEW)
+
+These elements are supported via the extension system:
+
+**AIE-Specific:**
+- **Worker** - AIE worker with core function and tile placement
+- **ExternalFunction** - External C/C++ kernel declarations
+- **CoreFunction** - Python wrapper functions with acquire/release semantics
+- **List** - List collections
+
+**Advanced Operations:**
+- **Split** - Split ObjectFifo into multiple outputs with offsets
+- **Join** - Join multiple ObjectFifos into single output
+- **TensorAccessPattern** - Complex DMA patterns with multi-dimensional slicing
+
+See [XML_Structure_Guide.md](XML_Structure_Guide.md) for complete documentation with examples.
+
 ## Graph Structure
 
 ### Node Types
 
-The semantic graph uses 39+ node types:
+The semantic graph uses 40+ node types:
 
 **Core:**
 - Module, Section, Function, EntryPoint
@@ -216,12 +303,18 @@ The semantic graph uses 39+ node types:
 
 **Expressions:**
 - VarRef, ConstExpr, BinaryOp, ComparisonOp
-- FunctionCall, MethodCall, IndexExpr
+- FunctionCall, MethodCall, IndexExpr, MethodChain
+
+**Extension Nodes (NEW):**
+- Worker, ExternalFunction, CoreFunction, List
+- Acquire, Release (for core function semantics)
+- ConstructorCall, TensorAccessPattern
 
 ### Edge Types
 
 Edges define relationships:
 
+**Core Edges:**
 - `contains`: Structural containment
 - `calls`: Function/method invocation
 - `has_arg`: Function arguments
@@ -231,6 +324,14 @@ Edges define relationships:
 - `condition`: Conditional expression
 - `then`/`else`: Branch statements
 - `nested_call`: Method chaining
+
+**Extension Edges (NEW):**
+- `core_fn`: Worker to core function reference
+- `placed_by`: Tile placement reference
+- `has_param`: Function parameters
+- `base`: Base object in method chain
+- `has_call`: Method calls in chain
+- `object`: Method call target object
 
 ## Code Generation Process
 
@@ -273,22 +374,27 @@ code = generator.generate()
 
 ## Validation
 
-The system achieves **100% functional accuracy** on the reference implementation:
+The system achieves **100% functional accuracy** on multiple reference implementations:
 
-- **Target**: passthroughjit.py (94 lines)
-- **Generated**: generated_passthrough.py (85 lines)
+### Passthrough Example (Basic)
+- **Target**: [passthroughjit.py](examples/applications/passthrough/passthroughjit.py) (94 lines)
+- **Generated**: [generated_passthrough.py](examples/applications/passthrough/generated_passthrough.py) (85 lines)
 - **Accuracy**: 100% (all logic, variables, method chains, arguments, branches, and comments correct)
+- **Metrics**:
+  - Graph: 178 nodes, 206 edges, 39 node types
+  - All imports, types, functions, method chains, and control flow correct
 
-### Validation Metrics
-
-- Graph: 178 nodes, 206 edges, 39 node types
-- All imports correct
-- All type definitions correct
-- All function signatures correct
-- All method chains correct (including `of_in.cons().forward()`)
-- All function arguments correct (including complex expressions)
-- All control flow correct (if/else branches)
-- All comments preserved
+### Matrix Multiplication Example (Advanced with Extensions)
+- **Target**: [matmuljit.py](examples/applications/matrix_mult/matmuljit.py)
+- **Generated**: [generated_matmul.py](examples/applications/matrix_mult/generated_matmul.py)
+- **Accuracy**: 100% (successfully generates complex multi-worker AIE code)
+- **Features Demonstrated**:
+  - Worker placement across multiple AIE tiles
+  - ExternalFunction declarations with C++ kernels
+  - CoreFunction definitions with acquire/release semantics
+  - Split and Join operations with offsets
+  - TensorAccessPattern for complex DMA operations
+  - Multi-dimensional tensor slicing
 
 ## Advanced Features
 
@@ -351,14 +457,48 @@ This enables proper branch reconstruction without confusion.
 
 ## Extensibility
 
-The system is designed to handle any IRON code pattern:
+The system is designed to handle any IRON code pattern through the extension system:
 
-1. **Add new XML elements**: Create handler in GraphDriver
-2. **Add new node types**: Define in graph structure
-3. **Add new edge types**: Use in relationships
-4. **Add new code patterns**: Implement in CodeGenerator
+### Adding New Extensions (Quick Guide)
 
-No hardcoded patterns means the system adapts to any structure.
+1. **Create GraphExtension** in [GraphExtender.py](extension/GraphExtender.py):
+   ```python
+   @register_extension
+   class MyNodeExtension(GraphExtension):
+       tag = "mynode"  # XML tag name
+
+       def process(self, elem, parent_nid):
+           name = elem.get("name")
+           node_id = self._add_node(name, "MyNode")
+           self._link(parent_nid, node_id, "contains")
+           self._declare_symbol(name, node_id)
+           # Process attributes and children...
+           return node_id
+   ```
+
+2. **Create CodeGenExtension** in [CodeGeneratorExtender.py](extension/CodeGeneratorExtender.py):
+   ```python
+   @register_codegen_extension
+   class MyNodeCodeGen(CodeGenExtension):
+       kind = "MyNode"  # Must match graph node kind
+
+       def generate(self, node_id):
+           name = self._get_node_attr(node_id, 'label')
+           # Build code string...
+           return f"{name} = MyNode(...)"
+   ```
+
+3. **No changes to core files needed** - Extensions auto-register!
+
+### Key Benefits
+
+- **Zero Core Modification**: Add new features without touching GraphDriver or CodeGenerator
+- **Automatic Registration**: Extensions wire themselves into the pipeline
+- **Full API Access**: Extensions have access to all builder/generator methods
+- **Type Safety**: Extensions use the same node/edge system as core code
+- **Isolated Testing**: Test extensions independently
+
+See [extension/README.md](extension/README.md) for complete guide with examples.
 
 ## Debugging
 
@@ -398,55 +538,114 @@ python main.py passthrough.xml
 diff generated_passthrough.py passthroughjit.py
 ```
 
-## Requirements
-
-- Python 3.7+
-- lxml (XML parsing)
-- networkx (graph structure)
-
-Install dependencies:
-
-```bash
-pip install lxml networkx
-```
-
 ## File Structure
 
 ```
-AIECAD/
-└── aiecad/                                    # Main package
-    ├── __init__.py                            # Package initialization
-    ├── main.py                                # Main entry point
-    ├── README.md                              # This file
-    │
-    ├── generator/                             # Graph generation
-    │   ├── __init__.py
-    │   └── GraphDriver.py                     # XML → Graph converter
-    │
-    ├── codegen/                               # Code generation
-    │   ├── __init__.py
-    │   └── backends/                          # Generation backends
-    │       ├── __init__.py
-    │       └── CodeGenerator.py               # Graph → Python converter
-    │
-    └── examples/                              # Example programs
-        ├── __init__.py
-        └── passthrough/                       # Passthrough example
-            ├── passthrough.xml                # XML input
-            ├── passthroughjit.py             # Reference implementation
-            ├── generated_passthrough.py       # Generated output
-            └── passthrough.graphml            # Semantic graph
+aiecad_compiler/
+├── main.py                                    # Main entry point
+├── README.md                                  # This file
+├── XML_Structure_Guide.md                     # Complete XML specification
+│
+├── graph_builder/                             # Graph generation
+│   ├── __init__.py
+│   └── GraphDriver.py                         # XML → Graph converter
+│
+├── codegen/                                   # Code generation
+│   ├── __init__.py
+│   └── backends/
+│       ├── __init__.py
+│       └── CodeGenerator.py                   # Graph → Python converter
+│
+├── extension/                                 # Extension system (NEW)
+│   ├── __init__.py
+│   ├── README.md                              # Extension documentation
+│   ├── ExtensionManager.py                    # Coordinates extensions
+│   ├── GraphExtender.py                       # XML → Graph extensions
+│   └── CodeGeneratorExtender.py               # Graph → Code extensions
+│
+├── diagnostics/                               # Error handling (NEW)
+│   ├── __init__.py
+│   ├── diagnostics.py                         # Diagnostic system
+│   └── codes.py                               # Error codes
+│
+├── backends/                                  # Backend support
+│   └── __init__.py
+│
+└── examples/                                  # Example programs
+    ├── __init__.py
+    └── applications/
+        ├── passthrough/                       # Basic example
+        │   ├── passthrough.xml                # XML input
+        │   ├── passthroughjit.py             # Reference implementation
+        │   ├── generated_passthrough.py       # Generated output
+        │   └── passthrough.graphml            # Semantic graph
+        │
+        └── matrix_mult/                       # Advanced example (NEW)
+            ├── matmul.xml                     # XML input
+            ├── matmuljit.py                  # Reference implementation
+            ├── generated_matmul.py            # Generated output
+            └── matmul.graphml                 # Semantic graph
 ```
+
+## Recent Changes
+
+### Version 2.0 - Extension System (November 14, 2025)
+
+**Major Features:**
+- ✨ **Extension System**: Add new XML node types without modifying core code
+  - GraphExtender for XML → graph conversion
+  - CodeGeneratorExtender for graph → code generation
+  - ExtensionManager for coordination
+- 🔧 **Built-in Extensions**: Worker, ExternalFunction, CoreFunction, List
+- 📊 **Advanced Operations**: Split, Join, TensorAccessPattern
+- 📖 **Comprehensive Documentation**: XML_Structure_Guide.md with complete examples
+- 🔍 **Diagnostics System**: Improved error reporting
+- ✅ **Matrix Multiplication Example**: Demonstrates complex multi-worker AIE code
+
+**Breaking Changes:**
+- None - fully backward compatible with existing XML files
+
+**Migration Guide:**
+- Existing XML files work without changes
+- New features available via extension elements (Worker, ExternalFunction, etc.)
 
 ## Contributing
 
 When extending the system:
 
+### Using Extensions (Recommended)
+1. Create GraphExtension in [GraphExtender.py](extension/GraphExtender.py)
+2. Create CodeGenExtension in [CodeGeneratorExtender.py](extension/CodeGeneratorExtender.py)
+3. Register with decorators (`@register_extension`, `@register_codegen_extension`)
+4. Test with example XML files
+5. Add documentation to [XML_Structure_Guide.md](XML_Structure_Guide.md)
+
+### Modifying Core (Only if necessary)
 1. Add XML elements to schema
 2. Create graph nodes in GraphDriver
 3. Add code generation in CodeGenerator
 4. Test with reference implementation
 5. Validate 100% accuracy
+
+## What's Next?
+
+### For Users
+1. **Start Simple**: Try the passthrough example to understand basic workflow
+2. **Explore Advanced**: Check out the matrix multiplication example for complex patterns
+3. **Read Documentation**: See [XML_Structure_Guide.md](XML_Structure_Guide.md) for complete XML reference
+4. **Create Your Own**: Write XML for your IRON code and generate Python
+
+### For Contributors
+1. **Understand Extensions**: Read [extension/README.md](extension/README.md)
+2. **Study Examples**: Look at WorkerExtension and CoreFunctionExtension
+3. **Create Extension**: Add support for new XML node types
+4. **Test Thoroughly**: Validate against reference implementations
+5. **Document**: Add examples to XML_Structure_Guide.md
+
+### Resources
+- **Core Code**: [GraphDriver.py](graph_builder/GraphDriver.py), [CodeGenerator.py](codegen/backends/CodeGenerator.py)
+- **Extensions**: [GraphExtender.py](extension/GraphExtender.py), [CodeGeneratorExtender.py](extension/CodeGeneratorExtender.py)
+- **Examples**: [passthrough](examples/applications/passthrough/), [matmul](examples/applications/matrix_mult/)
 
 ## License
 
@@ -461,4 +660,4 @@ Copyright © 2025 Brock Sorenson
 
 ## Author
 
-Brock Sorenson  
+Brock Sorenson

@@ -61,5 +61,3 @@ _extension_manager = ExtensionManager()
 def get_extension_manager() -> ExtensionManager:
     """Get the global extension manager instance."""
     return _extension_manager
-
-# Made with Bob
