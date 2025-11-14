@@ -6440,107 +6440,116 @@
   <data key="d0">source</data>
   <data key="d1">Expr</data>
 </node>
-<node id="Call_1434">
+<node id="IndexExpr_1434">
+  <data key="d0">[]</data>
+  <data key="d1">IndexExpr</data>
+</node>
+<node id="Call_1435">
   <data key="d0">call</data>
   <data key="d1">Call</data>
 </node>
-<node id="FunctionCall_1435">
+<node id="FunctionCall_1436">
   <data key="d0">np.where</data>
   <data key="d1">FunctionCall</data>
 </node>
-<node id="UnaryOp_1436">
+<node id="UnaryOp_1437">
   <data key="d0">~</data>
   <data key="d1">UnaryOp</data>
   <data key="d8">~</data>
 </node>
-<node id="Call_1437">
+<node id="Call_1438">
   <data key="d0">call</data>
   <data key="d1">Call</data>
 </node>
-<node id="FunctionCall_1438">
+<node id="FunctionCall_1439">
   <data key="d0">np.isclose</data>
   <data key="d1">FunctionCall</data>
 </node>
-<node id="VarRef_1439">
+<node id="VarRef_1440">
   <data key="d0">actual</data>
   <data key="d1">VarRef</data>
 </node>
-<node id="VarRef_1440">
+<node id="VarRef_1441">
   <data key="d0">expected</data>
   <data key="d1">VarRef</data>
 </node>
-<node id="VarRef_1441">
+<node id="VarRef_1442">
   <data key="d0">tolerance</data>
   <data key="d1">VarRef</data>
 </node>
-<node id="Kwarg_1442">
+<node id="Kwarg_1443">
   <data key="d0">rtol=...</data>
   <data key="d1">Kwarg</data>
   <data key="d7">rtol</data>
 </node>
-<node id="Assign_1443">
+<node id="ConstExpr_1444">
+  <data key="d0">0</data>
+  <data key="d1">ConstExpr</data>
+  <data key="d2">0</data>
+</node>
+<node id="Assign_1445">
   <data key="d0">mismatches=…</data>
   <data key="d1">Assign</data>
   <data key="d12">mismatches</data>
 </node>
-<node id="Variable_1444">
+<node id="Variable_1446">
   <data key="d0">mismatches</data>
   <data key="d1">Variable</data>
 </node>
-<node id="ConditionExpr_1445">
+<node id="ConditionExpr_1447">
   <data key="d0">len(mismatches) == 0</data>
   <data key="d1">ConditionExpr</data>
   <data key="d13">len(mismatches) == 0</data>
 </node>
-<node id="If_1446">
+<node id="If_1448">
   <data key="d0">if</data>
   <data key="d1">If</data>
   <data key="d13">len(mismatches) == 0</data>
 </node>
-<node id="Print_1447">
+<node id="Print_1449">
   <data key="d0">print(f"'Validation passed: Output matches expected for all 128 elements'")</data>
   <data key="d1">Print</data>
 </node>
-<node id="Print_1448">
+<node id="Print_1450">
   <data key="d0">print(f'Validation failed: {len(mismatches)} mismatches found')</data>
   <data key="d1">Print</data>
 </node>
-<node id="For_1449">
+<node id="For_1451">
   <data key="d0">for idx in mismatches[:5]</data>
   <data key="d1">For</data>
 </node>
-<node id="LoopVariable_1450">
+<node id="LoopVariable_1452">
   <data key="d0">idx</data>
   <data key="d1">LoopVariable</data>
 </node>
-<node id="Print_1451">
+<node id="Print_1453">
   <data key="d0">print(f'Index {idx}: actual={actual[idx]:.1f}, expected={expected[idx]:.1f}')</data>
   <data key="d1">Print</data>
 </node>
-<node id="ConditionExpr_1452">
+<node id="ConditionExpr_1454">
   <data key="d0">len(mismatches) &gt; 5</data>
   <data key="d1">ConditionExpr</data>
   <data key="d13">len(mismatches) &gt; 5</data>
 </node>
-<node id="If_1453">
+<node id="If_1455">
   <data key="d0">if</data>
   <data key="d1">If</data>
   <data key="d13">len(mismatches) &gt; 5</data>
 </node>
-<node id="Print_1454">
+<node id="Print_1456">
   <data key="d0">print(f'... and {len(mismatches) - 5} more mismatches')</data>
   <data key="d1">Print</data>
 </node>
-<node id="EntryPoint_1455">
+<node id="EntryPoint_1457">
   <data key="d0">EntryPoint</data>
   <data key="d1">EntryPoint</data>
 </node>
-<node id="ConditionExpr_1456">
+<node id="ConditionExpr_1458">
   <data key="d0">__name__ == '__main__'</data>
   <data key="d1">ConditionExpr</data>
   <data key="d13">__name__ == '__main__'</data>
 </node>
-<node id="If_1457">
+<node id="If_1459">
   <data key="d0">if</data>
   <data key="d1">If</data>
   <data key="d13">__name__ == '__main__'</data>
@@ -6557,7 +6566,7 @@
 <edge source="Module_1" target="Function_1347">
   <data key="d14">contains</data>
 </edge>
-<edge source="Module_1" target="EntryPoint_1455">
+<edge source="Module_1" target="EntryPoint_1457">
   <data key="d14">contains</data>
 </edge>
 <edge source="Section_2" target="Const_3">
@@ -11264,10 +11273,10 @@
 <edge source="Function_1347" target="Assign_1431">
   <data key="d14">contains</data>
 </edge>
-<edge source="Function_1347" target="Assign_1443">
+<edge source="Function_1347" target="Assign_1445">
   <data key="d14">contains</data>
 </edge>
-<edge source="Function_1347" target="If_1446">
+<edge source="Function_1347" target="If_1448">
   <data key="d14">contains</data>
 </edge>
 <edge source="Expr_1348" target="VarRef_1349">
@@ -11516,73 +11525,79 @@
 <edge source="Variable_1432" target="Variable_1432">
   <data key="d14">defines</data>
 </edge>
-<edge source="Expr_1433" target="Call_1434">
+<edge source="Expr_1433" target="IndexExpr_1434">
   <data key="d14">contains</data>
 </edge>
-<edge source="Call_1434" target="FunctionCall_1435">
+<edge source="IndexExpr_1434" target="Call_1435">
+  <data key="d14">base</data>
+</edge>
+<edge source="IndexExpr_1434" target="ConstExpr_1444">
+  <data key="d14">index</data>
+</edge>
+<edge source="Call_1435" target="FunctionCall_1436">
   <data key="d14">calls</data>
 </edge>
-<edge source="Call_1434" target="UnaryOp_1436">
+<edge source="Call_1435" target="UnaryOp_1437">
   <data key="d14">has_arg</data>
 </edge>
-<edge source="UnaryOp_1436" target="Call_1437">
+<edge source="UnaryOp_1437" target="Call_1438">
   <data key="d14">operand</data>
 </edge>
-<edge source="Call_1437" target="FunctionCall_1438">
+<edge source="Call_1438" target="FunctionCall_1439">
   <data key="d14">calls</data>
 </edge>
-<edge source="Call_1437" target="VarRef_1439">
+<edge source="Call_1438" target="VarRef_1440">
   <data key="d14">has_arg</data>
 </edge>
-<edge source="Call_1437" target="VarRef_1440">
+<edge source="Call_1438" target="VarRef_1441">
   <data key="d14">has_arg</data>
 </edge>
-<edge source="Call_1437" target="Kwarg_1442">
+<edge source="Call_1438" target="Kwarg_1443">
   <data key="d14">has_kwarg</data>
 </edge>
-<edge source="Kwarg_1442" target="VarRef_1441">
+<edge source="Kwarg_1443" target="VarRef_1442">
   <data key="d14">contains</data>
 </edge>
-<edge source="Assign_1443" target="Expr_1433">
+<edge source="Assign_1445" target="Expr_1433">
   <data key="d14">source</data>
 </edge>
-<edge source="Assign_1443" target="Variable_1444">
+<edge source="Assign_1445" target="Variable_1446">
   <data key="d14">assigns</data>
 </edge>
-<edge source="Variable_1444" target="Variable_1444">
+<edge source="Variable_1446" target="Variable_1446">
   <data key="d14">defines</data>
 </edge>
-<edge source="If_1446" target="ConditionExpr_1445">
+<edge source="If_1448" target="ConditionExpr_1447">
   <data key="d14">condition</data>
 </edge>
-<edge source="If_1446" target="Print_1447">
+<edge source="If_1448" target="Print_1449">
   <data key="d14">then</data>
 </edge>
-<edge source="If_1446" target="Print_1448">
+<edge source="If_1448" target="Print_1450">
   <data key="d14">else</data>
 </edge>
-<edge source="If_1446" target="For_1449">
+<edge source="If_1448" target="For_1451">
   <data key="d14">else</data>
 </edge>
-<edge source="If_1446" target="If_1453">
+<edge source="If_1448" target="If_1455">
   <data key="d14">else</data>
 </edge>
-<edge source="For_1449" target="LoopVariable_1450">
+<edge source="For_1451" target="LoopVariable_1452">
   <data key="d14">iterates</data>
 </edge>
-<edge source="For_1449" target="Print_1451">
+<edge source="For_1451" target="Print_1453">
   <data key="d14">contains</data>
 </edge>
-<edge source="If_1453" target="ConditionExpr_1452">
+<edge source="If_1455" target="ConditionExpr_1454">
   <data key="d14">condition</data>
 </edge>
-<edge source="If_1453" target="Print_1454">
+<edge source="If_1455" target="Print_1456">
   <data key="d14">then</data>
 </edge>
-<edge source="EntryPoint_1455" target="If_1457">
+<edge source="EntryPoint_1457" target="If_1459">
   <data key="d14">contains</data>
 </edge>
-<edge source="If_1457" target="ConditionExpr_1456">
+<edge source="If_1459" target="ConditionExpr_1458">
   <data key="d14">condition</data>
 </edge>
 </graph></graphml>

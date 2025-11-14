@@ -150,7 +150,7 @@ def main():
     for i in range(data_size):
         print(f'Expected = ReLU({inputA_data[i]:.1f} + {inputB_data[i]:.1f}) = {expected[i]:.1f} : Received = {actual[i]:.1f}')
     tolerance = 1e-3
-    mismatches = np.where(~np.isclose(actual, expected, rtol=tolerance))
+    mismatches = np.where(~np.isclose(actual, expected, rtol=tolerance))[0]
     if len(mismatches) == 0:
         print(f"'Validation passed: Output matches expected for all 128 elements'")
     else:
