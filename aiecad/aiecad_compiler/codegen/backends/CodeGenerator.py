@@ -47,6 +47,10 @@ class CodeGenerator:
         self.indent_level = 0
         self.dataflow_generated = False  # Prevent duplicate DataFlow generation
         
+        # Register code generation extensions
+        from extension.CodeGeneratorExtender import register_codegen_extensions
+        register_codegen_extensions(self)
+        
     # ===================================================================
     # SECTION 1: Graph Navigation and Code Emission
     # ===================================================================
@@ -105,11 +109,23 @@ class CodeGenerator:
     def _find_nodes_by_kind(self, kind: str) -> List[str]:
         """
         Find all nodes of a specific kind in the graph.
-        
+
         Used to locate specific elements like Module, Function, etc.
         """
         return [n for n, d in self.graph.nodes(data=True) if d.get('kind') == kind]
-    
+
+    def _is_numeric(self, value: str) -> bool:
+        """
+        Check if a string represents a numeric value (int, float, or scientific notation).
+
+        Examples: "123", "45.67", "1e-3", "2.5e10"
+        """
+        try:
+            float(value)
+            return True
+        except (ValueError, TypeError):
+            return False
+
     # ===================================================================
     # SECTION 2: Main Code Generation Entry Point
     # ===================================================================
@@ -188,13 +204,24 @@ class CodeGenerator:
                     self._emit(f"import {name}")
                 elif name == 'numpy':
                     self._emit(f"import {name} as {alias}" if alias else f"import {name}")
+                elif name == 'ml_dtypes':
+                    # Import bfloat16 directly from ml_dtypes
+                    self._emit("from ml_dtypes import bfloat16")
                 elif name == 'aie.iron':
                     self._emit()
-                    self._emit("from aie.iron import Program, Runtime, ObjectFifo")
+                    self._emit("from aie.iron import Program, Runtime, Worker, ObjectFifo")
                     self._emit("from aie.iron.placers import SequentialPlacer")
+                    self._emit("from aie.iron.device.tile import AnyComputeTile")
+                    self._emit("from aie.iron import ExternalFunction, jit")
+                    self._emit("from aie.iron.dataflow import ObjectFifoLink")
+                    self._emit("from aie.iron.device import Tile")
                     self._emit("from aie.iron.device import NPU1Col1, NPU2Col1, XCVC1902")
                     if alias:
                         self._emit(f"import {name} as {alias}")
+                elif name == 'aie.helpers.taplib':
+                    # Import TensorAccessPattern
+                    self._emit()
+                    self._emit("from aie.helpers.taplib import TensorAccessPattern")
                 elif alias:
                     self._emit(f"import {name} as {alias}")
                 else:
@@ -351,6 +378,9 @@ class CodeGenerator:
                     return value
                 elif value.startswith('np.'):
                     return value
+                # Check if it's a numeric value (int, float, scientific notation)
+                elif self._is_numeric(value):
+                    return value
                 elif not value.startswith('"'):
                     return f'"{value}"'
             return str(value)
@@ -373,17 +403,47 @@ class CodeGenerator:
                             return self._reconstruct_expression(child_id)
             return result
         
+        elif kind == 'UnaryOp':
+            operator = self._get_node_attr(expr_id, 'op')
+            if not operator:
+                operator = self._get_node_attr(expr_id, 'operator')  # Try 'operator' attribute
+
+            # Get operand
+            operand_nodes = self._get_children(expr_id, 'operand')
+            if not operand_nodes:
+                operand_nodes = self._get_children(expr_id, 'contains')
+
+            if operand_nodes:
+                operand = self._reconstruct_expression(operand_nodes[0])
+                if operand:
+                    return f"{operator}{operand}"
+            return f"unary_op({operator})"
+
         elif kind == 'BinaryOp':
             operator = self._get_node_attr(expr_id, 'operator')
-            # Get operands - they might be in 'operand' or 'contains' edges
+            if not operator:
+                operator = self._get_node_attr(expr_id, 'op')  # Try 'op' attribute
+
+            # Get operands - they might be in 'lhs'/'rhs', 'operand', or 'contains' edges
+            lhs_nodes = self._get_children(expr_id, 'lhs')
+            rhs_nodes = self._get_children(expr_id, 'rhs')
+
+            if lhs_nodes and rhs_nodes:
+                left = self._reconstruct_expression(lhs_nodes[0])
+                right = self._reconstruct_expression(rhs_nodes[0])
+                if left and right:
+                    return f"({left} {operator} {right})"
+
+            # Fallback to operand/contains edges
             operands = self._get_children(expr_id, 'operand')
             if not operands:
                 operands = self._get_children(expr_id, 'contains')
-            
+
             if len(operands) >= 2:
                 left = self._reconstruct_expression(operands[0])
                 right = self._reconstruct_expression(operands[1])
-                return f"{left} {operator} {right}"
+                if left and right:
+                    return f"({left} {operator} {right})"
             return f"binary_op({operator})"
         
         elif kind == 'ComparisonOp':
@@ -466,6 +526,72 @@ class CodeGenerator:
         elif kind == 'ConstructorExpr':
             ctor = self._get_node_attr(expr_id, 'constructor')
             return f"{ctor}()"
+
+        elif kind == 'Constructor' or kind == 'ConstructorCall':
+            # Handle constructor calls with arguments (like TensorAccessPattern)
+            ctor_label = self._get_node_attr(expr_id, 'label')
+            if ctor_label:
+                # Extract constructor name
+                ctor_name = ctor_label.rstrip('()')
+                
+                # Get constructor arguments
+                args = []
+                arg_nodes = self._get_children(expr_id, 'has_arg')
+                for arg_id in arg_nodes:
+                    arg_expr = self._reconstruct_expression(arg_id)
+                    if arg_expr:
+                        args.append(arg_expr)
+                
+                # Get constructor kwargs
+                kwarg_nodes = self._get_children(expr_id, 'has_kwarg')
+                for kw_id in kwarg_nodes:
+                    kw_name = self._get_node_attr(kw_id, 'name')
+                    
+                    # Check if kwarg has complex value
+                    value_nodes = self._get_children(kw_id, 'contains')
+                    if value_nodes:
+                        kw_value = self._reconstruct_expression(value_nodes[0])
+                        args.append(f"{kw_name}={kw_value}")
+                    else:
+                        kw_value = self._get_node_attr(kw_id, 'value')
+                        if kw_value:
+                            args.append(f"{kw_name}={kw_value}")
+                
+                args_str = ", ".join(args)
+                return f"{ctor_name}({args_str})"
+            return "Constructor()"
+        
+        elif kind == 'MethodCall':
+            # Handle standalone method calls (e.g., in kwargs like prod())
+            method_name = self._get_node_attr(expr_id, 'label')
+            object_ref = self._get_node_attr(expr_id, 'object_ref')
+
+            if object_ref:
+                # This is a method call on a specific object: object.method()
+                return f"{object_ref}.{method_name}()"
+            else:
+                # Just the method name with parentheses
+                return f"{method_name}()"
+
+        elif kind == 'List':
+            # Handle list expressions
+            list_items = self._get_children(expr_id, 'contains')
+            items = []
+            for item_id in list_items:
+                item_expr = self._reconstruct_expression(item_id)
+                if item_expr:
+                    items.append(item_expr)
+            return f"[{', '.join(items)}]"
+        
+        elif kind == 'String':
+            # Handle string literals
+            string_val = self._get_node_attr(expr_id, 'label')
+            if string_val:
+                # Check if it already has quotes
+                if string_val.startswith('"') or string_val.startswith("'"):
+                    return string_val
+                return f'"{string_val}"'
+            return '""'
         
         elif kind == 'DtypeExpr':
             dtype = self._get_node_attr(expr_id, 'dtype')
@@ -474,13 +600,45 @@ class CodeGenerator:
         elif kind == 'NumpyDtype':
             return f"np.{label}"
         
+        elif kind in ['MethodCall', 'MethodCallExpr']:
+            # Handle method calls like inputA.numel()
+            # Check if method name is in attributes
+            method_name = self._get_node_attr(expr_id, 'method')
+            if not method_name:
+                # Fallback to label
+                method_name = label if label else ""
+                # If label contains the full call like "inputA.numel()", extract just the method
+                if method_name and '.' in method_name:
+                    method_name = method_name.split('.')[-1].rstrip('()')
+
+            obj_nodes = self._get_children(expr_id, 'object')
+            if obj_nodes:
+                obj_label = self._get_node_attr(obj_nodes[0], 'label')
+                # Get arguments if any
+                arg_nodes = self._get_children(expr_id, 'has_arg')
+                if arg_nodes:
+                    args = []
+                    for arg_id in arg_nodes:
+                        arg_expr = self._reconstruct_expression(arg_id)
+                        args.append(arg_expr)
+                    return f"{obj_label}.{method_name}({', '.join(args)})"
+                else:
+                    return f"{obj_label}.{method_name}()"
+            else:
+                # Check for object_ref attribute
+                obj_ref = self._get_node_attr(expr_id, 'object_ref')
+                if obj_ref:
+                    return f"{obj_ref}.{method_name}()"
+                # Method without object reference
+                return f"{method_name}()"
+
         elif kind == 'VarRef':
             return str(label)
-        
+
         elif kind == 'Const':
             value = self._get_node_attr(expr_id, 'value')
             return str(value)
-        
+
         elif kind == 'Variable':
             return str(label)
         
@@ -506,6 +664,10 @@ class CodeGenerator:
             if children:
                 return self._reconstruct_expression(children[0])
             return str(label) if label else "expr"
+        
+        elif kind == 'MethodChain':
+            # Reconstruct method chain
+            return self._reconstruct_method_chain(expr_id)
         
         return str(label) if label else "unknown"
     
@@ -558,10 +720,17 @@ class CodeGenerator:
             
             if method_kind == 'MethodCall':
                 method_name = self._get_node_attr(method_id, 'label')
+
+                # Check for object reference - either as edge or attribute
                 obj_nodes = self._get_children(method_id, 'object')
-                
-                if obj_nodes:
-                    obj_name = self._get_node_attr(obj_nodes[0], 'label')
+                object_ref = self._get_node_attr(method_id, 'object_ref')
+
+                if obj_nodes or object_ref:
+                    # Get object name from edge or attribute
+                    if obj_nodes:
+                        obj_name = self._get_node_attr(obj_nodes[0], 'label')
+                    else:
+                        obj_name = object_ref
                     
                     # Get arguments from call node
                     args = []
@@ -698,6 +867,109 @@ class CodeGenerator:
         # No method or function found - return empty string
         return ""
     
+    def _reconstruct_method_chain(self, chain_id: str) -> str:
+        """
+        Reconstruct a MethodChain node into a method chain expression.
+
+        MethodChain nodes contain:
+        - base: The base expression (var, index, etc.)
+        - has_call: Method calls in the chain
+
+        Returns:
+            str: Complete method chain (e.g., "obj.cons().split(args)")
+        """
+        # Get the base expression
+        base_nodes = self._get_children(chain_id, 'base')
+        if not base_nodes:
+            return ""
+
+        # Reconstruct base
+        result = self._reconstruct_expression(base_nodes[0])
+
+        # Get method calls in order
+        method_nodes = self._get_children(chain_id, 'has_call')
+        for method_id in method_nodes:
+            method_name = self._get_node_attr(method_id, 'label')
+            if method_name:
+                # Check if method has kwargs
+                kwarg_nodes = self._get_children(method_id, 'has_kwarg')
+                if kwarg_nodes:
+                    # Reconstruct kwargs
+                    kwargs = []
+                    for kw_id in kwarg_nodes:
+                        kw_name = self._get_node_attr(kw_id, 'name')
+                        kw_value = self._get_node_attr(kw_id, 'value')
+
+                        # Check if kwarg has complex value (list, constructor, etc.)
+                        value_nodes = self._get_children(kw_id, 'contains')
+                        if value_nodes:
+                            # Reconstruct complex value
+                            for v_id in value_nodes:
+                                v_kind = self._get_node_attr(v_id, 'kind')
+
+                                if v_kind == 'List':
+                                    # Reconstruct list
+                                    list_items = self._get_children(v_id, 'contains')
+                                    items = []
+                                    for item_id in list_items:
+                                        item_kind = self._get_node_attr(item_id, 'kind')
+                                        if item_kind == 'TypeRef':
+                                            items.append(self._get_node_attr(item_id, 'label'))
+                                        elif item_kind == 'String':
+                                            item_val = self._get_node_attr(item_id, 'label')
+                                            items.append(f'"{item_val}"')
+                                        elif item_kind in ['BinaryOp', 'ConstExpr', 'Expr']:
+                                            # Reconstruct expression
+                                            expr = self._reconstruct_expression(item_id)
+                                            if expr:
+                                                items.append(expr)
+                                        elif item_kind == 'VarRef':
+                                            # Variable reference
+                                            var_label = self._get_node_attr(item_id, 'label')
+                                            items.append(var_label)
+                                        elif item_kind == 'MethodRef':
+                                            # Method reference (e.g., inputA.numel)
+                                            method_ref = self._get_node_attr(item_id, 'label')
+                                            # Add () if it's a method call
+                                            if method_ref and '.' in method_ref:
+                                                items.append(f"{method_ref}()")
+                                            else:
+                                                items.append(method_ref)
+                                    if items:
+                                        kwargs.append(f"{kw_name}=[{', '.join(items)}]")
+
+                                elif v_kind == 'ConstructorCall':
+                                    # Reconstruct constructor
+                                    ctor_label = self._get_node_attr(v_id, 'label')
+                                    if ctor_label:
+                                        # Get constructor arguments
+                                        ctor_args = []
+                                        ctor_arg_nodes = self._get_children(v_id, 'has_arg')
+                                        for arg_id in ctor_arg_nodes:
+                                            arg_expr = self._reconstruct_expression(arg_id)
+                                            if arg_expr:
+                                                ctor_args.append(arg_expr)
+
+                                        if ctor_args:
+                                            # Extract constructor name from label (e.g., "Tile()" -> "Tile")
+                                            ctor_name = ctor_label.rstrip('()')
+                                            kwargs.append(f"{kw_name}={ctor_name}({', '.join(ctor_args)})")
+                                        else:
+                                            kwargs.append(f"{kw_name}={ctor_label}")
+
+                        elif kw_value:
+                            # Simple kwarg
+                            kwargs.append(f"{kw_name}={kw_value}")
+
+                    if kwargs:
+                        result += f".{method_name}({', '.join(kwargs)})"
+                    else:
+                        result += f".{method_name}()"
+                else:
+                    result += f".{method_name}()"
+
+        return result
+    
     # ===================================================================
     # SECTION 8: Statement-Specific Processors
     # ===================================================================
@@ -817,14 +1089,18 @@ class CodeGenerator:
         tuple_nodes = self._get_children(shape_id, 'has')
         if not tuple_nodes:
             return "()"
-        
+
         elements = []
         for tuple_id in tuple_nodes:
             expr_nodes = self._get_children(tuple_id, 'contains')
             for expr_id in expr_nodes:
-                expr_label = self._get_node_attr(expr_id, 'label')
-                elements.append(expr_label)
-        
+                # Reconstruct the full expression using generic reconstructor
+                expr_str = self._reconstruct_expression(expr_id)
+                # Strip outer parentheses from expressions (BinaryOp already adds them)
+                if expr_str and expr_str.startswith('(') and expr_str.endswith(')'):
+                    expr_str = expr_str[1:-1]
+                elements.append(expr_str if expr_str else "?")
+
         if len(elements) == 1:
             return f"({elements[0]},)"
         return f"({', '.join(elements)})"
@@ -835,7 +1111,10 @@ class CodeGenerator:
         dtype_nodes = self._get_children(dtype_id, 'is')
         if dtype_nodes:
             dtype_label = self._get_node_attr(dtype_nodes[0], 'label')
-            return f"np.dtype[np.{dtype_label}]"
+            # Add np. prefix for numpy types (int32, float32, etc.), but not for ml_dtypes (bfloat16)
+            if dtype_label and not dtype_label.startswith('np.') and dtype_label != 'bfloat16':
+                dtype_label = f"np.{dtype_label}"
+            return f"np.dtype[{dtype_label}]"
         return "np.dtype"
     
     # ===================================================================
@@ -849,6 +1128,9 @@ class CodeGenerator:
         
         Generates:
         - ObjectFifo declarations
+        - ExternalFunction declarations
+        - CoreFunction definitions
+        - Worker declarations
         - Runtime instance
         - SequenceBlock with operations
         - Program creation
@@ -874,17 +1156,27 @@ class CodeGenerator:
         
         # Generate ObjectFifos
         self._emit("# Data movement with ObjectFifos")
-        objectfifo_nodes = [c for c in self._get_children(dataflow_id, 'contains') 
+        objectfifo_nodes = [c for c in self._get_children(dataflow_id, 'contains')
                            if self._get_node_attr(c, 'kind') == 'ObjectFifo']
         
         for of_id in objectfifo_nodes:
             of_name = self._get_node_attr(of_id, 'label')
-            
+
             # Check for source expression
             source_nodes = self._get_children(of_id, 'source_expr')
             if source_nodes:
-                source_expr = self._reconstruct_call(source_nodes[0])
-                self._emit(f"{of_name} = {source_expr}")
+                source_id = source_nodes[0]
+                source_kind = self._get_node_attr(source_id, 'kind')
+
+                # Handle MethodChain nodes
+                if source_kind == 'MethodChain':
+                    source_expr = self._reconstruct_method_chain(source_id)
+                    if source_expr:
+                        self._emit(f"{of_name} = {source_expr}")
+                else:
+                    source_expr = self._reconstruct_call(source_id)
+                    if source_expr:
+                        self._emit(f"{of_name} = {source_expr}")
             else:
                 # Get type and kwargs
                 type_nodes = self._get_children(of_id, 'uses_type')
@@ -895,15 +1187,75 @@ class CodeGenerator:
                 for kw_id in kwarg_nodes:
                     name = self._get_node_attr(kw_id, 'name')
                     value = self._get_node_attr(kw_id, 'value')
-                    kwargs.append(f'{name}="{value}"')
+
+                    # Convert numeric strings to integers (no quotes)
+                    if value and value.isdigit():
+                        kwargs.append(f'{name}={value}')
+                    elif name == 'name':
+                        kwargs.append(f'{name}="{value}"')
+                    else:
+                        kwargs.append(f'{name}="{value}"')
                 
                 kwargs_str = ", ".join(kwargs)
                 if kwargs_str:
-                    self._emit(f"{of_name} = ObjectFifo({type_name}, {kwargs_str})")
+                    self._emit(f"{of_name} = ObjectFifo(obj_type={type_name}, {kwargs_str})")
                 else:
-                    self._emit(f"{of_name} = ObjectFifo({type_name})")
+                    self._emit(f"{of_name} = ObjectFifo(obj_type={type_name})")
         
         self._emit()
+        
+        # Generate ExternalFunctions
+        ext_func_nodes = [c for c in self._get_children(dataflow_id, 'contains')
+                         if self._get_node_attr(c, 'kind') == 'ExternalFunction']
+        
+        if ext_func_nodes:
+            self._emit("#Define kernels here... ------------------------------------------------\\/")
+            for ef_id in ext_func_nodes:
+                # Use extension if available
+                if hasattr(self, '_generate_ext_externalfunction'):
+                    code = self._generate_ext_externalfunction(ef_id)
+                    self._emit(code)
+                    self._emit()
+        
+        # Generate CoreFunctions
+        core_func_nodes = [c for c in self._get_children(dataflow_id, 'contains')
+                          if self._get_node_attr(c, 'kind') == 'CoreFunction']
+        
+        if core_func_nodes:
+            self._emit("# core_fn here:")
+            for cf_id in core_func_nodes:
+                # Use extension if available
+                if hasattr(self, '_generate_ext_corefunction'):
+                    code = self._generate_ext_corefunction(cf_id)
+                    self._emit(code)
+                    self._emit()
+        
+        # Generate Workers
+        worker_nodes = [c for c in self._get_children(dataflow_id, 'contains')
+                       if self._get_node_attr(c, 'kind') == 'Worker']
+        
+        if worker_nodes:
+            self._emit("#Workers defined here:")
+            self._emit("Workers = []")
+            for w_id in worker_nodes:
+                # Use extension if available
+                if hasattr(self, '_generate_ext_worker'):
+                    code = self._generate_ext_worker(w_id)
+                    self._emit(code)
+            self._emit()
+        
+        # Generate Lists (like Workers list)
+        list_nodes = [c for c in self._get_children(dataflow_id, 'contains')
+                     if self._get_node_attr(c, 'kind') == 'List']
+        
+        for l_id in list_nodes:
+            # Use extension if available
+            if hasattr(self, '_generate_ext_list'):
+                code = self._generate_ext_list(l_id)
+                self._emit(code)
+        
+        if list_nodes:
+            self._emit()
         
         # Generate Runtime
         self._emit("# Runtime operations to move data to/from the AIE-array")
@@ -982,15 +1334,33 @@ class CodeGenerator:
     def _generate_operation(self, op_id: str):
         """
         Generate operation (fill/drain).
-        
+
         Generates: rt.operation(args, kwargs)
         """
-        op_name = self._get_node_attr(op_id, 'label')
-        
+        # Get the operation name from the target method, not the Operation label
+        target_nodes = self._get_children(op_id, 'target')
+        op_name = None
+        if target_nodes:
+            # Check if target is a MethodCall node with direct name attribute
+            target_kind = self._get_node_attr(target_nodes[0], 'kind')
+            if target_kind == 'MethodCall':
+                op_name = self._get_node_attr(target_nodes[0], 'label')
+            else:
+                # This is a call to rt.fill() or rt.drain()
+                # The target is a method call like rt.fill
+                target_call = self._reconstruct_call(target_nodes[0])
+                # Extract the method name (e.g., "fill" from "rt.fill()")
+                if '.' in target_call:
+                    op_name = target_call.split('.')[1].rstrip('()')
+
+        if not op_name:
+            # Fallback to using the label
+            op_name = self._get_node_attr(op_id, 'label')
+
         # Get all arguments from has_arg edges
         arg_nodes = self._get_children(op_id, 'has_arg')
         args = []
-        
+
         for arg_id in arg_nodes:
             arg_kind = self._get_node_attr(arg_id, 'kind')
             if arg_kind == 'Call':
@@ -1000,19 +1370,44 @@ class CodeGenerator:
             elif arg_kind in ['Variable', 'VarRef', 'Binding']:
                 # This is a variable reference like a_in
                 arg_label = self._get_node_attr(arg_id, 'label')
-                args.append(arg_label)
+                # Check if this is a list that needs unpacking
+                if arg_label == 'Workers' and op_name == 'start':
+                    args.append(f"*{arg_label}")
+                else:
+                    args.append(arg_label)
+            elif arg_kind == 'List':
+                # This is a list node - check if it needs unpacking
+                list_label = self._get_node_attr(arg_id, 'label')
+                if list_label and op_name == 'start':
+                    args.append(f"*{list_label}")
+                else:
+                    args.append(list_label if list_label else "list")
             else:
                 # Try to reconstruct as expression
                 arg_expr = self._reconstruct_expression(arg_id)
                 args.append(arg_expr)
-        
+
         # Get kwargs
         kwarg_nodes = self._get_children(op_id, 'has_kwarg')
         for kw_id in kwarg_nodes:
             name = self._get_node_attr(kw_id, 'name')
             value = self._get_node_attr(kw_id, 'value')
-            args.append(f"{name}={value}")
-        
+
+            # Check if kwarg has complex value (constructor, list, etc.)
+            value_nodes = self._get_children(kw_id, 'contains')
+            if value_nodes:
+                # Reconstruct complex value
+                value_expr = self._reconstruct_expression(value_nodes[0])
+                args.append(f"{name}={value_expr}")
+            elif value:
+                # Simple value - check if it needs quotes or special handling
+                if value == 'True' or value == 'False':
+                    args.append(f"{name}={value}")
+                elif value == 'None':
+                    args.append(f"{name}={value}")
+                else:
+                    args.append(f"{name}={value}")
+
         args_str = ", ".join(args)
         self._emit(f"rt.{op_name}({args_str})")
     
@@ -1033,10 +1428,19 @@ class CodeGenerator:
                         dataflow_sections.append(child_id)
             
             if dataflow_sections:
-                resolve_nodes = [c for c in self._get_children(dataflow_sections[0], 'contains') 
+                resolve_nodes = [c for c in self._get_children(dataflow_sections[0], 'contains')
                                if self._get_node_attr(c, 'kind') == 'ResolveProgram']
                 if resolve_nodes:
-                    self._emit("return my_program.resolve_program(placer)")
+                    # Get the target method call
+                    target_nodes = self._get_children(resolve_nodes[0], 'target')
+                    if target_nodes:
+                        # Reconstruct the method call with its arguments
+                        method_call = self._reconstruct_call(target_nodes[0])
+                        if method_call:
+                            self._emit(f"return {method_call}")
+                            return
+                    # Fallback to hardcoded version
+                    self._emit("return my_program.resolve_program(SequentialPlacer())")
                     return
         
         self._emit("return")
