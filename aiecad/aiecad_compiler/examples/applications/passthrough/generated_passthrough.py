@@ -4,8 +4,12 @@
 import sys
 import numpy as np
 
-from aie.iron import Program, Runtime, ObjectFifo
+from aie.iron import Program, Runtime, Worker, ObjectFifo
 from aie.iron.placers import SequentialPlacer
+from aie.iron.device.tile import AnyComputeTile
+from aie.iron import ExternalFunction, jit
+from aie.iron.dataflow import ObjectFifoLink
+from aie.iron.device import Tile
 from aie.iron.device import NPU1Col1, NPU2Col1, XCVC1902
 import aie.iron as iron
 
@@ -14,13 +18,13 @@ import aie.iron as iron
 def passthrough_dmas_jit(input_tensor, output_tensor):
     N = input_tensor.numel()
     line_size = 1024
-    assert N % line_size == 0, "N must be multiple of line_size"
+    assert (N % line_size) == 0, "N must be multiple of line_size"
     # Define tensor types
     vector_ty = np.ndarray[(N,), np.dtype[np.int32]]
     line_ty = np.ndarray[(line_size,), np.dtype[np.int32]]
 
     # Data movement with ObjectFifos
-    of_in = ObjectFifo(line_ty, name="in")
+    of_in = ObjectFifo(obj_type=line_ty, name="in")
     of_out = of_in.cons().forward()
 
     # Runtime operations to move data to/from the AIE-array
@@ -34,7 +38,7 @@ def passthrough_dmas_jit(input_tensor, output_tensor):
 
     # Place components and resolve program (generate MLIR + compile)
     placer = SequentialPlacer()
-    return my_program.resolve_program(placer)
+    return my_program.resolve_program(SequentialPlacer())
 
 
 def main():
@@ -44,7 +48,7 @@ def main():
     # Parse arguments
     if len(sys.argv) > 1:
         N = int(sys.argv[1])
-        assert N % line_size == 0, "N must be multiple of line_size"
+        assert (N % line_size) == 0, "N must be multiple of line_size"
     if len(sys.argv) > 2:
         device_name = sys.argv[2]
         if device_name == "npu":
@@ -66,7 +70,7 @@ def main():
     output_host = output_tensor.numpy()
     input_host = input_tensor.numpy()
     # Verify: output should equal input (passthrough)
-    errors = np.count_nonzero(input_host != output_host)
+    errors = np.count_nonzero((input_host != output_host))
     # Print results
     print(f"{'Index':>6} {'Input':>8} {'Output':>8}")
     print("-" * 24)

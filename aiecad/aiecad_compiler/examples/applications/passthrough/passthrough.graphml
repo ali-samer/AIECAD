@@ -62,74 +62,78 @@
   <data key="d1">TypeNode</data>
 </node>
 <node id="Expr_12">
-  <data key="d0">N</data>
+  <data key="d0"></data>
   <data key="d1">Expr</data>
 </node>
-<node id="TypeNode_13">
+<node id="VarRef_13">
+  <data key="d0">N</data>
+  <data key="d1">VarRef</data>
+</node>
+<node id="TypeNode_14">
   <data key="d0">dtype</data>
   <data key="d1">TypeNode</data>
 </node>
-<node id="NumpyDtype_14">
+<node id="NumpyDtype_15">
   <data key="d0">int32</data>
   <data key="d1">NumpyDtype</data>
 </node>
-<node id="TypeAbstraction_15">
+<node id="TypeAbstraction_16">
   <data key="d0">line_ty</data>
   <data key="d1">TypeAbstraction</data>
 </node>
-<node id="TypeNode_16">
+<node id="TypeNode_17">
   <data key="d0">ndarray</data>
   <data key="d1">TypeNode</data>
 </node>
-<node id="TypeNode_17">
+<node id="TypeNode_18">
   <data key="d0">shape</data>
   <data key="d1">TypeNode</data>
 </node>
-<node id="TypeNode_18">
+<node id="TypeNode_19">
   <data key="d0">tuple</data>
   <data key="d1">TypeNode</data>
 </node>
-<node id="Expr_19">
-  <data key="d0">line_size</data>
+<node id="Expr_20">
+  <data key="d0"></data>
   <data key="d1">Expr</data>
 </node>
-<node id="TypeNode_20">
+<node id="VarRef_21">
+  <data key="d0">line_size</data>
+  <data key="d1">VarRef</data>
+</node>
+<node id="TypeNode_22">
   <data key="d0">dtype</data>
   <data key="d1">TypeNode</data>
 </node>
-<node id="NumpyDtype_21">
+<node id="NumpyDtype_23">
   <data key="d0">int32</data>
   <data key="d1">NumpyDtype</data>
 </node>
-<node id="Section_22">
+<node id="Section_24">
   <data key="d0">DataFlow</data>
   <data key="d1">Section</data>
 </node>
-<node id="ObjectFifo_23">
+<node id="ObjectFifo_25">
   <data key="d0">of_in</data>
   <data key="d1">ObjectFifo</data>
 </node>
-<node id="Kwarg_24">
+<node id="Kwarg_26">
   <data key="d0">name=in</data>
   <data key="d1">Kwarg</data>
   <data key="d4">name</data>
   <data key="d2">in</data>
 </node>
-<node id="ObjectFifo_25">
+<node id="ObjectFifo_27">
   <data key="d0">of_out</data>
   <data key="d1">ObjectFifo</data>
 </node>
-<node id="Call_27">
-  <data key="d0">call</data>
-  <data key="d1">Call</data>
+<node id="MethodChain_28">
+  <data key="d0">method_chain</data>
+  <data key="d1">MethodChain</data>
 </node>
-<node id="MethodCall_28">
+<node id="MethodCall_29">
   <data key="d0">cons</data>
   <data key="d1">MethodCall</data>
-</node>
-<node id="Call_29">
-  <data key="d0">call</data>
-  <data key="d1">Call</data>
 </node>
 <node id="MethodCall_30">
   <data key="d0">forward</data>
@@ -792,7 +796,7 @@
 <edge source="Module_1" target="Section_2">
   <data key="d13">contains</data>
 </edge>
-<edge source="Module_1" target="Section_22">
+<edge source="Module_1" target="Section_24">
   <data key="d13">contains</data>
 </edge>
 <edge source="Module_1" target="Function_54">
@@ -822,7 +826,7 @@
 <edge source="Section_2" target="TypeAbstraction_8">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_2" target="TypeAbstraction_15">
+<edge source="Section_2" target="TypeAbstraction_16">
   <data key="d13">contains</data>
 </edge>
 <edge source="TypeAbstraction_8" target="TypeNode_9">
@@ -831,7 +835,7 @@
 <edge source="TypeNode_9" target="TypeNode_10">
   <data key="d13">has</data>
 </edge>
-<edge source="TypeNode_9" target="TypeNode_13">
+<edge source="TypeNode_9" target="TypeNode_14">
   <data key="d13">has</data>
 </edge>
 <edge source="TypeNode_10" target="TypeNode_11">
@@ -840,67 +844,76 @@
 <edge source="TypeNode_11" target="Expr_12">
   <data key="d13">contains</data>
 </edge>
-<edge source="TypeNode_13" target="NumpyDtype_14">
+<edge source="Expr_12" target="VarRef_13">
+  <data key="d13">contains</data>
+</edge>
+<edge source="TypeNode_14" target="NumpyDtype_15">
   <data key="d13">is</data>
 </edge>
-<edge source="TypeAbstraction_15" target="TypeNode_16">
-  <data key="d13">has</data>
-</edge>
-<edge source="TypeNode_16" target="TypeNode_17">
-  <data key="d13">has</data>
-</edge>
-<edge source="TypeNode_16" target="TypeNode_20">
+<edge source="TypeAbstraction_16" target="TypeNode_17">
   <data key="d13">has</data>
 </edge>
 <edge source="TypeNode_17" target="TypeNode_18">
   <data key="d13">has</data>
 </edge>
-<edge source="TypeNode_18" target="Expr_19">
+<edge source="TypeNode_17" target="TypeNode_22">
+  <data key="d13">has</data>
+</edge>
+<edge source="TypeNode_18" target="TypeNode_19">
+  <data key="d13">has</data>
+</edge>
+<edge source="TypeNode_19" target="Expr_20">
   <data key="d13">contains</data>
 </edge>
-<edge source="TypeNode_20" target="NumpyDtype_21">
+<edge source="Expr_20" target="VarRef_21">
+  <data key="d13">contains</data>
+</edge>
+<edge source="TypeNode_22" target="NumpyDtype_23">
   <data key="d13">is</data>
 </edge>
-<edge source="Section_22" target="ObjectFifo_23">
+<edge source="Section_24" target="ObjectFifo_25">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_22" target="ObjectFifo_25">
+<edge source="Section_24" target="ObjectFifo_27">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_22" target="Runtime_31">
+<edge source="Section_24" target="Runtime_31">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_22" target="SequenceBlock_32">
+<edge source="Section_24" target="SequenceBlock_32">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_22" target="Program_48">
+<edge source="Section_24" target="Program_48">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_22" target="Placer_50">
+<edge source="Section_24" target="Placer_50">
   <data key="d13">contains</data>
 </edge>
-<edge source="Section_22" target="ResolveProgram_51">
+<edge source="Section_24" target="ResolveProgram_51">
   <data key="d13">contains</data>
 </edge>
-<edge source="ObjectFifo_23" target="TypeAbstraction_15">
+<edge source="ObjectFifo_25" target="TypeAbstraction_16">
   <data key="d13">uses_type</data>
 </edge>
-<edge source="ObjectFifo_23" target="Kwarg_24">
+<edge source="ObjectFifo_25" target="Kwarg_26">
   <data key="d13">has_kwarg</data>
 </edge>
-<edge source="ObjectFifo_25" target="Call_27">
-  <data key="d13">source_expr</data>
-</edge>
-<edge source="Call_27" target="MethodCall_28">
+<edge source="ObjectFifo_25" target="MethodCall_29">
   <data key="d13">calls</data>
 </edge>
-<edge source="Call_27" target="Call_29">
-  <data key="d13">nested_call</data>
+<edge source="ObjectFifo_27" target="MethodChain_28">
+  <data key="d13">source_expr</data>
 </edge>
-<edge source="MethodCall_28" target="ObjectFifo_23">
-  <data key="d13">object</data>
+<edge source="MethodChain_28" target="ObjectFifo_25">
+  <data key="d13">base</data>
 </edge>
-<edge source="Call_29" target="MethodCall_30">
+<edge source="MethodChain_28" target="MethodCall_29">
+  <data key="d13">has_call</data>
+</edge>
+<edge source="MethodChain_28" target="MethodCall_30">
+  <data key="d13">has_call</data>
+</edge>
+<edge source="MethodCall_29" target="MethodCall_30">
   <data key="d13">calls</data>
 </edge>
 <edge source="SequenceBlock_32" target="Call_33">
@@ -942,7 +955,7 @@
 <edge source="Call_40" target="MethodCall_41">
   <data key="d13">calls</data>
 </edge>
-<edge source="MethodCall_41" target="ObjectFifo_23">
+<edge source="MethodCall_41" target="ObjectFifo_25">
   <data key="d13">object</data>
 </edge>
 <edge source="Operation_42" target="Call_43">
@@ -966,14 +979,14 @@
 <edge source="Call_45" target="MethodCall_46">
   <data key="d13">calls</data>
 </edge>
-<edge source="MethodCall_46" target="ObjectFifo_25">
+<edge source="MethodCall_46" target="ObjectFifo_27">
   <data key="d13">object</data>
 </edge>
 <edge source="Program_48" target="Call_49">
   <data key="d13">constructed_by</data>
 </edge>
 <edge source="ResolveProgram_51" target="Call_52">
-  <data key="d13">calls</data>
+  <data key="d13">target</data>
 </edge>
 <edge source="Call_52" target="VarRef_53">
   <data key="d13">has_arg</data>
