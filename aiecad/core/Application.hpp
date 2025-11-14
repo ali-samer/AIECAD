@@ -32,6 +32,8 @@ public:
 private:
 	void init();
 	void shutdown();
+	void setupUIFramework();
+	void pushLayers();
 
 private:
 	ApplicationSpecification  m_appSpec;
