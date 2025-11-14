@@ -1608,7 +1608,7 @@ def passthrough_dmas_jit(input_tensor, output_tensor):
 
 ---
 
-### Example 2: Matrix Multiplication with Workers
+### Example 2: Element-wise Add with ReLU Activation (Multi-Worker)
 
 **XML Snippet**:
 ```xml
@@ -1911,4 +1911,4 @@ Before generating XML, verify:
 
 For questions or issues with XML generation, please contact the AIECAD compiler team or refer to the example files:
 - `aiecad/aiecad_compiler/examples/applications/passthrough/passthrough.xml`
-- `aiecad/aiecad_compiler/examples/applications/matrix_mult/matmul.xml`
+- `aiecad/aiecad_compiler/examples/applications/matrix_mult/add_activate.xml`

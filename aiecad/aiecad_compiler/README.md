@@ -8,7 +8,7 @@ A flexible, extensible, graph-based code generation system for AMD's Ryzen AI NP
 - 📊 **Graph-Based** - Pure semantic graph representation, no hardcoded patterns
 - 🔧 **Advanced AIE Support** - Workers, external functions, split/join, tensor access patterns
 - 📖 **Comprehensive Documentation** - Complete XML specification with examples
-- ✅ **Validated** - Tested on simple passthrough and complex multi-worker matrix multiplication
+- ✅ **Validated** - Tested on simple passthrough and complex multi-worker add-activate operations
 
 ## Overview
 
@@ -87,10 +87,10 @@ python main.py examples/applications/passthrough/passthrough.xml
 python main.py examples/applications/passthrough/passthrough.xml --run
 ```
 
-**Matrix Multiplication (Advanced with Extensions):**
+**Add-Activate (Advanced with Extensions):**
 ```bash
 # Uses Worker, ExternalFunction, CoreFunction, Split, Join
-python main.py examples/applications/matrix_mult/matmul.xml
+python main.py examples/applications/matrix_mult/add_activate.xml
 ```
 
 **Example Output:**
@@ -384,10 +384,10 @@ The system achieves **100% functional accuracy** on multiple reference implement
   - Graph: 178 nodes, 206 edges, 39 node types
   - All imports, types, functions, method chains, and control flow correct
 
-### Matrix Multiplication Example (Advanced with Extensions)
-- **Target**: [matmuljit.py](examples/applications/matrix_mult/matmuljit.py)
-- **Generated**: [generated_matmul.py](examples/applications/matrix_mult/generated_matmul.py)
-- **Accuracy**: 100% (successfully generates complex multi-worker AIE code)
+### Add-Activate Example (Advanced with Extensions)
+- **Target**: [add_activatejit.py](examples/applications/matrix_mult/add_activatejit.py)
+- **Generated**: [generated_add_activate.py](examples/applications/matrix_mult/generated_add_activate.py)
+- **Accuracy**: 100% (successfully generates complex multi-worker AIE code with element-wise addition and ReLU activation)
 - **Features Demonstrated**:
   - Worker placement across multiple AIE tiles
   - ExternalFunction declarations with C++ kernels
@@ -395,6 +395,7 @@ The system achieves **100% functional accuracy** on multiple reference implement
   - Split and Join operations with offsets
   - TensorAccessPattern for complex DMA operations
   - Multi-dimensional tensor slicing
+  - Element-wise operations (addition) followed by activation (ReLU)
 
 ## Advanced Features
 
@@ -581,10 +582,10 @@ aiecad_compiler/
         │   └── passthrough.graphml            # Semantic graph
         │
         └── matrix_mult/                       # Advanced example (NEW)
-            ├── matmul.xml                     # XML input
-            ├── matmuljit.py                  # Reference implementation
-            ├── generated_matmul.py            # Generated output
-            └── matmul.graphml                 # Semantic graph
+            ├── add_activate.xml               # XML input (element-wise add + ReLU)
+            ├── add_activatejit.py            # Reference implementation
+            ├── generated_add_activate.py      # Generated output
+            └── add_activate.graphml           # Semantic graph
 ```
 
 ## Recent Changes
@@ -600,7 +601,7 @@ aiecad_compiler/
 - 📊 **Advanced Operations**: Split, Join, TensorAccessPattern
 - 📖 **Comprehensive Documentation**: XML_Structure_Guide.md with complete examples
 - 🔍 **Diagnostics System**: Improved error reporting
-- ✅ **Matrix Multiplication Example**: Demonstrates complex multi-worker AIE code
+- ✅ **Add-Activate Example**: Demonstrates complex multi-worker AIE code with element-wise operations
 
 **Breaking Changes:**
 - None - fully backward compatible with existing XML files
@@ -631,7 +632,7 @@ When extending the system:
 
 ### For Users
 1. **Start Simple**: Try the passthrough example to understand basic workflow
-2. **Explore Advanced**: Check out the matrix multiplication example for complex patterns
+2. **Explore Advanced**: Check out the add-activate example for complex patterns
 3. **Read Documentation**: See [XML_Structure_Guide.md](XML_Structure_Guide.md) for complete XML reference
 4. **Create Your Own**: Write XML for your IRON code and generate Python
 
@@ -645,7 +646,7 @@ When extending the system:
 ### Resources
 - **Core Code**: [GraphDriver.py](graph_builder/GraphDriver.py), [CodeGenerator.py](codegen/backends/CodeGenerator.py)
 - **Extensions**: [GraphExtender.py](extension/GraphExtender.py), [CodeGeneratorExtender.py](extension/CodeGeneratorExtender.py)
-- **Examples**: [passthrough](examples/applications/passthrough/), [matmul](examples/applications/matrix_mult/)
+- **Examples**: [passthrough](examples/applications/passthrough/), [add-activate](examples/applications/matrix_mult/)
 
 ## License
 

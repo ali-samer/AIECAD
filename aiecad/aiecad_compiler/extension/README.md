@@ -160,9 +160,9 @@ class MyNodeCodeGen(CodeGenExtension):
 register_codegen_extension(MyNodeCodeGen)
 ```
 
-## Matrix Multiplication Example
+## Add-Activate Example
 
-The matmul example demonstrates the extension system with:
+The add-activate example demonstrates the extension system with element-wise addition and ReLU activation:
 
 ### New XML Node Types
 - `<Worker>` - Compute workers with core functions
@@ -232,11 +232,11 @@ To test new extensions:
 
 ```bash
 # Generate code from XML
-python main.py examples/applications/matrix_mult/matmul.xml
+python main.py examples/applications/matrix_mult/add_activate.xml
 
 # Compare with original
-diff examples/applications/matrix_mult/matmuljit.py \
-     examples/applications/matrix_mult/generated_matmul.py
+diff examples/applications/matrix_mult/add_activatejit.py \
+     examples/applications/matrix_mult/generated_add_activate.py
 ```
 
 ## Future Extensions

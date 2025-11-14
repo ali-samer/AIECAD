@@ -1133,7 +1133,7 @@ class GraphBuilder:
             fstring_text = fstring_elem.text.strip()
             # Check if it already has f-string syntax (starts with f' or f")
             if fstring_text.startswith("f'") or fstring_text.startswith('f"'):
-                # Already has f-string wrapper (matmul format)
+                # Already has f-string wrapper (add_activate format)
                 # Convert {{ to { and }} to } for proper f-string interpolation
                 # (XML uses {{ to escape braces, but Python f-strings need single braces for variables)
                 fstring_text = fstring_text.replace('{{', '{').replace('}}', '}')
