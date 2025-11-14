@@ -1910,5 +1910,5 @@ Before generating XML, verify:
 ## Support
 
 For questions or issues with XML generation, please contact the AIECAD compiler team or refer to the example files:
-- `aiecad/aiecad_compiler/examples/applications/passthrough/passthrough.xml`
-- `aiecad/aiecad_compiler/examples/applications/matrix_mult/add_activate.xml`
+- `examples/applications/passthrough/passthrough.xml`
+- `examples/applications/add_activate/add_activate.xml`

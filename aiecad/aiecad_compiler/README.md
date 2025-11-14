@@ -90,7 +90,7 @@ python main.py examples/applications/passthrough/passthrough.xml --run
 **Add-Activate (Advanced with Extensions):**
 ```bash
 # Uses Worker, ExternalFunction, CoreFunction, Split, Join
-python main.py examples/applications/matrix_mult/add_activate.xml
+python main.py examples/applications/add_activate/add_activate.xml
 ```
 
 **Example Output:**
@@ -385,8 +385,8 @@ The system achieves **100% functional accuracy** on multiple reference implement
   - All imports, types, functions, method chains, and control flow correct
 
 ### Add-Activate Example (Advanced with Extensions)
-- **Target**: [add_activatejit.py](examples/applications/matrix_mult/add_activatejit.py)
-- **Generated**: [generated_add_activate.py](examples/applications/matrix_mult/generated_add_activate.py)
+- **Target**: [add_activatejit.py](examples/applications/add_activate/add_activatejit.py)
+- **Generated**: [generated_add_activate.py](examples/applications/add_activate/generated_add_activate.py)
 - **Accuracy**: 100% (successfully generates complex multi-worker AIE code with element-wise addition and ReLU activation)
 - **Features Demonstrated**:
   - Worker placement across multiple AIE tiles
@@ -581,7 +581,7 @@ aiecad_compiler/
         │   ├── generated_passthrough.py       # Generated output
         │   └── passthrough.graphml            # Semantic graph
         │
-        └── matrix_mult/                       # Advanced example (NEW)
+        └── add_activate/                       # Advanced example (NEW)
             ├── add_activate.xml               # XML input (element-wise add + ReLU)
             ├── add_activatejit.py            # Reference implementation
             ├── generated_add_activate.py      # Generated output
@@ -646,7 +646,7 @@ When extending the system:
 ### Resources
 - **Core Code**: [GraphDriver.py](graph_builder/GraphDriver.py), [CodeGenerator.py](codegen/backends/CodeGenerator.py)
 - **Extensions**: [GraphExtender.py](extension/GraphExtender.py), [CodeGeneratorExtender.py](extension/CodeGeneratorExtender.py)
-- **Examples**: [passthrough](examples/applications/passthrough/), [add-activate](examples/applications/matrix_mult/)
+- **Examples**: [passthrough](examples/applications/passthrough/), [add-activate](examples/applications/add_activate/)
 
 ## License
 

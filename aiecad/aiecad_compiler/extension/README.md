@@ -232,11 +232,11 @@ To test new extensions:
 
 ```bash
 # Generate code from XML
-python main.py examples/applications/matrix_mult/add_activate.xml
+python main.py examples/applications/add_activate/add_activate.xml
 
 # Compare with original
-diff examples/applications/matrix_mult/add_activatejit.py \
-     examples/applications/matrix_mult/generated_add_activate.py
+diff examples/applications/add_activate/add_activatejit.py \
+     examples/applications/add_activate/generated_add_activate.py
 ```
 
 ## Future Extensions
