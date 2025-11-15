@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Dict, List
 import networkx as nx
 from lxml import etree
+from extension.GraphExtender import register_extensions
 
 # ----------------------------------------------------------------------
 # Type Definitions
@@ -51,6 +52,9 @@ class GraphBuilder:
         self._counter = 0  # Unique ID generator
         self._symbol_table: Dict[str, NodeId] = {}  # Global scope
         self._scope_stack: List[Dict[str, NodeId]] = [self._symbol_table]  # Nested scopes
+
+        #Bring in GraphExtender extensions 
+        register_extensions(self)
 
     # ===================================================================
     # SECTION 1: Node and Edge Management
@@ -245,9 +249,21 @@ class GraphBuilder:
                 self._link(p, nd, "has")
                 self._walk_type_def(c, nd)
             elif t == "expr":
-                txt = c.findtext("var") or c.text or "?"
-                nd = self._add_node(txt.strip(), "Expr")
-                self._link(p, nd, "contains")
+                # Check if expr has child elements (method, var, binary_op, etc.)
+                expr_children = [child for child in c if child.tag is not etree.Comment]
+                if expr_children:
+                    # Create Expr node and process children
+                    nd = self._add_node("", "Expr")
+                    self._link(p, nd, "contains")
+                    # Process the first child as the expression content
+                    child_node = self._walk_expression(expr_children[0], nd)
+                    if child_node:
+                        self._link(nd, child_node, "contains")
+                else:
+                    # Fallback to text content
+                    txt = c.findtext("var") or c.text or "?"
+                    nd = self._add_node(txt.strip(), "Expr")
+                    self._link(p, nd, "contains")
             elif t == "numpy_dtype":
                 txt = c.text.strip() if c.text else "unknown"
                 nd = self._add_node(txt, "NumpyDtype")
@@ -277,6 +293,7 @@ class GraphBuilder:
         - SequenceBlock: Sequenced operations with bindings
         - Program: Compiled program representation
         - Placer: Component placement strategy
+        - ExternalFunction, CoreFunction, Worker, List: Extension-handled nodes
         """
         sec = self._add_node("DataFlow", "Section")
         self._link(parent_nid, sec, "contains")
@@ -284,10 +301,15 @@ class GraphBuilder:
             if c.tag is etree.Comment:
                 continue
             t = str(c.tag)
-            # Dispatch to dataflow-specific handler
+            # First try dataflow-specific handler
             h = getattr(self, f"_df_{t.lower()}", None)
             if h:
                 h(c, sec)
+            else:
+                # Try extension handler
+                ext_h = getattr(self, f"_process_ext_{t.lower()}", None)
+                if ext_h:
+                    ext_h(c, sec)
 
     def _df_objectfifo(self, e: etree.Element, p: NodeId):
         """
@@ -335,7 +357,15 @@ class GraphBuilder:
                 # Handle method chains for derived fifos
                 method_chain = sub.find("method_chain")
                 if method_chain is not None:
-                    chain_expr = self._walk_method_chain(method_chain, n)
+                    # Try to use extension handler if available (for kwargs support)
+                    ext_handler = getattr(self, '_process_ext_worker', None)
+                    if ext_handler:
+                        # Use WorkerExtension's _walk_method_chain which handles kwargs
+                        from extension.GraphExtender import WorkerExtension
+                        worker_ext = WorkerExtension(self)
+                        chain_expr = worker_ext._walk_method_chain(method_chain, n)
+                    else:
+                        chain_expr = self._walk_method_chain(method_chain, n)
                     if chain_expr:
                         self._link(n, chain_expr, "source_expr")
                 else:
@@ -382,11 +412,20 @@ class GraphBuilder:
         op = self._add_node(name, "Operation")
         self._link(p, op, "contains")
 
-        # Target call chain
+        # Target call chain or method
         target_call = e.find("target/call")
+        target_method = e.find("target/method")
+
         if target_call is not None:
             tgt_call = self._walk_call_chain(target_call, op)
             self._link(op, tgt_call, "target")
+        elif target_method is not None:
+            # Handle <target><method ref="rt" name="fill"/></target>
+            method_name = target_method.get("name")
+            method_ref = target_method.get("ref")
+            if method_name:
+                method_node = self._add_node(method_name, "MethodCall", object_ref=method_ref)
+                self._link(op, method_node, "target")
 
         # Args - handle new structure with <arg> elements
         args = e.find("args")
@@ -415,8 +454,151 @@ class GraphBuilder:
                         chain_n = self._walk_call_chain(chain, op)
                         self._link(op, chain_n, arg_tag)
                 elif arg_tag == "kwarg":
-                    kw_n = self._add_node(f"{arg.get('name')}={arg.get('value')}", "Kwarg", name=arg.get("name"), value=arg.get("value"))
-                    self._link(op, kw_n, "has_kwarg")
+                    kw_name = arg.get("name")
+                    kw_value = arg.get("value")
+
+                    # Check for child elements (constructor, list, var, method, etc.)
+                    kw_children = [c for c in arg if c.tag is not etree.Comment]
+
+                    if kw_children:
+                        # Check for var + method pattern (e.g., <var ref="obj"/>.<method name="prod"/>)
+                        if (len(kw_children) == 2 and
+                            kw_children[0].tag == "var" and
+                            kw_children[1].tag == "method"):
+                            # This is a method call pattern: obj.method()
+                            var_ref = kw_children[0].get("ref")
+                            method_name = kw_children[1].get("name")
+
+                            kw_n = self._add_node(f"{kw_name}=...", "Kwarg", name=kw_name)
+                            self._link(op, kw_n, "has_kwarg")
+
+                            # Create a Call node that represents var.method()
+                            call_node = self._add_node(f"{var_ref}.{method_name}", "Call")
+                            self._link(kw_n, call_node, "contains")
+
+                            # Add the method as a child
+                            method_node = self._add_node(method_name, "MethodCall", object_ref=var_ref)
+                            self._link(call_node, method_node, "calls")
+                        else:
+                            # Complex kwarg with child elements
+                            kw_n = self._add_node(f"{kw_name}=...", "Kwarg", name=kw_name)
+                            self._link(op, kw_n, "has_kwarg")
+
+                            # Process child elements
+                            for child in kw_children:
+                                child_node = self._process_kwarg_child(child, kw_n)
+                                if child_node:
+                                    self._link(kw_n, child_node, "contains")
+                    else:
+                        # Simple kwarg with value attribute
+                        kw_n = self._add_node(f"{kw_name}={kw_value}", "Kwarg", name=kw_name, value=kw_value)
+                        self._link(op, kw_n, "has_kwarg")
+
+    def _process_kwarg_child(self, elem: etree.Element, parent_nid: NodeId) -> NodeId | None:
+        """Process child elements within kwargs (constructor, list, var, method, etc.)"""
+        tag = elem.tag
+
+        if tag == "constructor":
+            # Handle <constructor ref="Tile">...</constructor>
+            ref = elem.get("ref")
+            ctor_nid = self._add_node(ref, "Constructor")
+
+            # Process constructor arguments
+            for arg in elem.findall("arg"):
+                arg_children = [c for c in arg if c.tag is not etree.Comment]
+                for child in arg_children:
+                    if child.tag == "const":
+                        const_val = child.text
+                        const_nid = self._add_node(const_val, "ConstExpr", value=const_val)
+                        self._link(ctor_nid, const_nid, "has_arg")
+                    elif child.tag == "var":
+                        var_ref = child.get("ref")
+                        try:
+                            var_node = self._lookup(var_ref)
+                            self._link(ctor_nid, var_node, "has_arg")
+                        except NameError:
+                            var_node = self._add_node(var_ref, "VarRef")
+                            self._link(ctor_nid, var_node, "has_arg")
+
+            # Process constructor kwargs
+            for kwarg in elem.findall("kwarg"):
+                kw_name = kwarg.get("name")
+                kw_children = [c for c in kwarg if c.tag is not etree.Comment]
+                if kw_children:
+                    kw_nid = self._add_node(f"{kw_name}=...", "Kwarg", name=kw_name)
+                    self._link(ctor_nid, kw_nid, "has_kwarg")
+                    for child in kw_children:
+                        child_node = self._process_kwarg_child(child, kw_nid)
+                        if child_node:
+                            self._link(kw_nid, child_node, "contains")
+
+            return ctor_nid
+
+        elif tag == "list":
+            # Handle <list>...</list>
+            list_nid = self._add_node("list", "List")
+            for item in elem:
+                if item.tag == "const":
+                    const_val = item.text
+                    const_nid = self._add_node(const_val, "ConstExpr", value=const_val)
+                    self._link(list_nid, const_nid, "contains")
+                elif item.tag == "method":
+                    method_name = item.get("name")
+                    method_ref = item.get("ref")
+                    method_nid = self._add_node(method_name, "MethodCall", object_ref=method_ref)
+                    self._link(list_nid, method_nid, "contains")
+                elif item.tag == "binary_op":
+                    binop_nid = self._process_binary_op(item, list_nid)
+                    if binop_nid:
+                        self._link(list_nid, binop_nid, "contains")
+            return list_nid
+
+        elif tag == "const":
+            # Handle <const>value</const>
+            const_val = elem.text
+            return self._add_node(const_val, "ConstExpr", value=const_val)
+
+        elif tag == "string":
+            # Handle <string>"value"</string> or <string>value</string>
+            string_val = elem.text
+            return self._add_node(string_val, "String", value=string_val)
+
+        elif tag == "var":
+            # Handle <var ref="..."/>
+            var_ref = elem.get("ref")
+            try:
+                return self._lookup(var_ref)
+            except NameError:
+                return self._add_node(var_ref, "VarRef")
+
+        elif tag == "method":
+            # Handle <method ref="..." name="..."/>
+            method_name = elem.get("name")
+            method_ref = elem.get("ref")
+            return self._add_node(method_name, "MethodCall", object_ref=method_ref)
+
+        elif tag == "binary_op":
+            return self._process_binary_op(elem, parent_nid)
+
+        return None
+
+    def _process_binary_op(self, elem: etree.Element, parent_nid: NodeId) -> NodeId | None:
+        """Process binary operation elements"""
+        op = elem.get("op", "+")
+        binop_nid = self._add_node(f"{op}", "BinaryOp", op=op)
+
+        # Process operands
+        children = [c for c in elem if c.tag is not etree.Comment]
+        if len(children) >= 1:
+            left_nid = self._process_kwarg_child(children[0], binop_nid)
+            if left_nid:
+                self._link(binop_nid, left_nid, "lhs")
+        if len(children) >= 2:
+            right_nid = self._process_kwarg_child(children[1], binop_nid)
+            if right_nid:
+                self._link(binop_nid, right_nid, "rhs")
+
+        return binop_nid
 
     def _df_program(self, e: etree.Element, p: NodeId):
         name = e.get("name")
@@ -441,7 +623,7 @@ class GraphBuilder:
         target = e.find("target/method")
         if target is not None:
             tgt_call = self._walk_call_chain(target, n)
-            self._link(n, tgt_call, "calls")
+            self._link(n, tgt_call, "target")
 
     # ===================================================================
     # SECTION 6: Method Chain and Call Processing
@@ -873,7 +1055,24 @@ class GraphBuilder:
             dtype_val = e.text.strip() if e.text else "unknown"
             dtype_node = self._add_node(f"np.{dtype_val}", "DtypeExpr", dtype=dtype_val)
             return dtype_node
-        
+
+        if tag == "string":
+            # Handle <string>"value"</string> or <string>value</string>
+            string_val = e.text if e.text else ""
+            return self._add_node(string_val, "String", value=string_val)
+
+        if tag == "unary_op":
+            # Handle <unary_op op="~">...</unary_op>
+            op = e.get("op", "~")
+            unary_node = self._add_node(f"{op}", "UnaryOp", op=op)
+            # Process operand
+            children = [c for c in e if c.tag is not etree.Comment]
+            if children:
+                operand = self._walk_expression(children[0], unary_node)
+                if operand:
+                    self._link(unary_node, operand, "operand")
+            return unary_node
+
         # Generic expression node
         expr_node = self._add_node(tag, "Expr")
         # Try to capture any child expressions
@@ -926,11 +1125,22 @@ class GraphBuilder:
         # Check for fstring element
         fstring_elem = e.find("fstring")
         expression_elem = e.find("expression")
-        
+        string_elem = e.find("string")
+        var_elem = e.find("var")
+
         if fstring_elem is not None and fstring_elem.text:
             # This is an f-string
             fstring_text = fstring_elem.text.strip()
-            pr = self._add_node(f'print(f"{fstring_text}")', "Print")
+            # Check if it already has f-string syntax (starts with f' or f")
+            if fstring_text.startswith("f'") or fstring_text.startswith('f"'):
+                # Already has f-string wrapper (add_activate format)
+                # Convert {{ to { and }} to } for proper f-string interpolation
+                # (XML uses {{ to escape braces, but Python f-strings need single braces for variables)
+                fstring_text = fstring_text.replace('{{', '{').replace('}}', '}')
+                pr = self._add_node(f'print({fstring_text})', "Print")
+            else:
+                # Just the content, need to add f-string wrapper (passthrough format)
+                pr = self._add_node(f'print(f"{fstring_text}")', "Print")
             self._link(p, pr, "contains")
             # Link to variables used in the f-string
             vars_elem = e.find("vars")
@@ -942,6 +1152,20 @@ class GraphBuilder:
                             self._link(pr, self._lookup(name), "uses")
                         except NameError:
                             pass
+        elif string_elem is not None and string_elem.text:
+            # This is a simple string literal
+            string_text = string_elem.text.strip()
+            pr = self._add_node(f'print({string_text})', "Print")
+            self._link(p, pr, "contains")
+        elif var_elem is not None and var_elem.text:
+            # This is a variable reference like print(outputD)
+            var_name = var_elem.text.strip()
+            pr = self._add_node(f'print({var_name})', "Print")
+            self._link(p, pr, "contains")
+            try:
+                self._link(pr, self._lookup(var_name), "uses")
+            except NameError:
+                pass
         elif expression_elem is not None and expression_elem.text:
             # This is a regular expression like "-" * 24
             expr_text = expression_elem.text.strip()
