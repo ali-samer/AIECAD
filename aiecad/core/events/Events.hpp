@@ -14,4 +14,7 @@ struct WindowResizeEvent {
 // TODO: These are temporary events, made to test out the EventBus API. Must be removed.
 struct CounterIncrementEvent {};
 struct HelloPrintEvent {};
+struct MessageEvent {
+	std::string text;
+};
 } // namespace aiecad
