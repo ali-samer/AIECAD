@@ -1,4 +1,4 @@
-if (NOT LINUX)
+if (LINUX)
     message(FATAL_ERROR "This project is based on programming AMD's NPU AIE-ML chip, thus it is not
         supported for non Linux devices.")
 endif ()

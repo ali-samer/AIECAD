@@ -1,27 +1,20 @@
 {
   "version": 6,
-  "cmakeMinimumRequired": {
-    "major": 0, "minor": 1, "patch": 0
-  },
+  "cmakeMinimumRequired": { "major": 3, "minor": 23 },
   "configurePresets": [
     {
-      "name": "default",
-      "description": "Default build using Ninja and C++23",
-      "generator": "Ninja",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "23",
-        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
       "name": "dev",
-      "description": "dev mode sets project options for purposes of continuing development",
+      "displayName": "Dev (Release)",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "IS_MAINTAINER_MODE": "ON",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/Release/generators/conan_toolchain.cmake",
+        "IS_MAINTAINER_MODE": "ON"
       }
     }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" }
   ]
 }
