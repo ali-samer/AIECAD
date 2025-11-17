@@ -63,7 +63,6 @@ enum class LoggerLevel {
  * config.toFile = "aiecad.log";
  * config.toStdout = true;
  * config.pattern = "[%T] [%^%l%$] %v";
- * config.flushOnWarnOrHigher = true;
  * Logger::init(config);
  * @endcode
  */

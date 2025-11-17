@@ -158,7 +158,6 @@ function(aiecad_define_tests)
             # Strip the tailing test directory name for the folder name.
             string(REPLACE "test/" "" test_dir_name "${cur_dir_name}")
             set_property(TARGET ${cur_test_name} PROPERTY FOLDER "Tests/${test_dir_name}")
-            # TODO: add aiecad_test_support target
             target_link_libraries(${cur_test_name} PRIVATE aiecad_test_support)
             # TODO: add `apply_aiecad_compile_options_to_target()` function
             # apply_aiecad_compile_options_to_target(${cur_test_name})
