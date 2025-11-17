@@ -17,3 +17,4 @@
 /* Graphics suppport */
 #cmakedefine01 AIECAD_WINDOW_BACKEND_GLFW
 #cmakedefine01 AIECAD_RENDER_API_OPENGL
+#cmakedefine01 AIECAD_RENDER_API_METAL

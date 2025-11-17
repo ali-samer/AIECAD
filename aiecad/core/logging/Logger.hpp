@@ -3,6 +3,7 @@
 #include <aiecad/core/logging/LoggerConfig.hpp>
 #include <aiecad/Portability.hpp>
 #include <aiecad/macros/Macros.hpp>
+#include <aiecad/utils/Assert.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -85,28 +86,17 @@ private:
 // #define AIECAD_CLIENT_ENABLE_LOGGER(...)    AIECAD_CLIENT_LOGGER::EnableLogging(__VA_ARGS__);
 
 #if AIECAD_ENABLE_ASSERTS
-#	define AIECAD_ASSERT(cond, ...) \
-		do { \
-			if (!(cond)) { \
-				AIECAD_ERROR(__VA_ARGS__); \
-				throw std::runtime_error{ \
-					"(File: " __FILE__ ", Line: " AIECAD_STRINGIZE(__LINE__) \
-					") AIECAD assertion failed: " #cond \
-				}; \
-			} \
-		} while (0)
+#define AIECAD_ASSERT(cond, ...)														\
+    do {																				\
+        if (!(cond)) {																	\
+            AIECAD_ERROR(																\
+                "Assertion failed: {}\n  File: {}\n  Line: {}\n  Func: {}",				\
+                #cond, __FILE__, __LINE__, __func__);									\
+            AIECAD_ERROR("" __VA_ARGS__);												\
+            ::aiecad::detail::HandleAssertFailure(#cond, __FILE__, __LINE__, __func__); \
+        }																				\
+    } while (0)
 
-#	define AIECAD_CORE_ASSERT(cond, ...) \
-		do { \
-			if (!(cond)) { \
-				AIECAD_CORE_ERROR(__VA_ARGS__); \
-				throw std::runtime_error{ \
-					"(File: " __FILE__ ", Line: " AIECAD_STRINGIZE(__LINE__) \
-					") AIECAD (backend) assertion failed: " #cond \
-				}; \
-			} \
-		} while (0)
 #else
 #	define AIECAD_ASSERT(cond, ...)
-#	define AIECAD_CORE_ASSERT(cond, ...)
 #endif

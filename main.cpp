@@ -1,14 +1,14 @@
 #include <iostream>
-#include <aiecad/core/Window.hpp>
+#include <aiecad/core/Application.hpp>
 
 int main(int /*argc*/, char ** /*argv*/) {
-    /*
+
     aiecad::ApplicationSpecification spec{
-        .name = "AIECAD",
-        .window_spec.width = 1600,
-        .window_spec.height = 900,
-        .window_spec.vSync = true,
-        .maximized = false
+        .title = "AIECAD",
+        .winspec.title = "AIECAD",
+        .winspec.width = 1512,
+        .winspec.height = 887,
+        .winspec.vsync = true,
     };
 
     try {
@@ -17,16 +17,6 @@ int main(int /*argc*/, char ** /*argv*/) {
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
     }
-    */
 
-    using namespace aiecad;
-    WindowSpecification spec {};
-    spec.title = "aiecad";
-    spec.width = 128U;
-    spec.height = 128U;
-    auto window = Window::Create(spec);
-    while (true) {
-        window->onUpdate();
-    }
     return 0;
 }

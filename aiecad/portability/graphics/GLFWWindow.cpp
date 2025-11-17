@@ -2,6 +2,15 @@
 #include <aiecad/Portability.hpp>
 #include <aiecad/core/logging/Logger.hpp>
 
+#if AIECAD_RENDER_API_OPENGL
+#include <aiecad/portability/graphics/OpenGLContext.hpp>
+#elif AIECAD_RENDER_API_METAL
+// TODO: add metal render support
+#else
+#error "AIECAD only supports OpenGL and Metal for its graphics rendering. " \
+	"Couldn't identify the rendering API on your system."
+#endif
+
 #include <GLFW/glfw3.h>
 #include <fmt/format.h>
 
@@ -65,16 +74,21 @@ void GLFWWindow::init(const WindowSpecification &spec) {
 
 	glfwWindowHint(GLFW_RESIZABLE, spec.resizable ? GLFW_TRUE : GLFW_FALSE);
 
+	// TODO:
 	// assuming an opengl context is used. Later on, we'd have to support Apple's
 	// rending API, Metal.
+#if AIECAD_RENDER_API_OPENGL
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef AIECAD_PLATFORM_MACOSX
+#	ifdef AIECAD_PLATFORM_MACOSX
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+#	endif
+#elif AIECAD_PLATFORM_MACOSX
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
 
-	AIECAD_CORE_ASSERT(s_glfwInitialized == true, "GLFW must be initialized "
+	AIECAD_ASSERT(s_glfwInitialized == true, "GLFW must be initialized "
 	                   "before a window is created");
 	m_window = glfwCreateWindow(
 		static_cast<int>(spec.width),
@@ -91,8 +105,16 @@ void GLFWWindow::init(const WindowSpecification &spec) {
 	glfwMakeContextCurrent(m_window);
 	setVSync(spec.vsync);
 
+#if AIECAD_RENDER_API_OPENGL
+	m_context = std::make_unique<OpenGLContext>(m_window);
+	m_context->init();
+#elif AIECAD_RENDERER_METAL
+	// TODO: MetalGraphicsContext that uses glfwGetCocoaWindow and sets up CAMetalLayer,
+	static_assert(false, "Metal renderer not implemented yet");
+#endif
 	glfwSetWindowUserPointer(m_window, this);
 
+	setupCallbacks();
 	AIECAD_CORE_INFO("Window created: '{}' ({}x{})",
 	                 spec.title, spec.width, spec.height);
 }
@@ -177,5 +199,21 @@ bool GLFWWindow::validSpec(const WindowSpecification &spec, std::string *err_des
 	}
 
 	return true;
+}
+
+void GLFWWindow::setupCallbacks() {
+	glfwSetWindowCloseCallback(m_window, [](GLFWwindow *window) {
+		auto* self = static_cast<GLFWWindow *>(glfwGetWindowUserPointer(window));
+		if (self && self->m_closeCallback) {
+			self->m_closeCallback();
+		}
+	});
+
+	// glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
+	// 	auto* self = static_cast<GLFWWindow *>(glfwGetWindowUserPointer(window));
+	// 	if (self && self->m_resizeCallback) {
+	// 		self->m_resizeCallback(width, height);
+	// 	}
+	// });
 }
 } // namespace aiecad

@@ -42,6 +42,7 @@ class Deps(ConanFile):
 
         copy(self, "*glfw*", src=bindings_src, dst=bindings_dst)
         copy(self, "*opengl3*", src=bindings_src, dst=bindings_dst)
+        copy(self, "*metal*", src=bindings_src, dst=bindings_dst)
 
         # If we want backends next to the generated CMake files instead:
         # bindings_dst = os.path.join(self.generators_folder, "bindings")

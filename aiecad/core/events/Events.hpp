@@ -17,4 +17,6 @@ struct HelloPrintEvent {};
 struct MessageEvent {
 	std::string text;
 };
+
+struct AppShutdownEvent {};
 } // namespace aiecad

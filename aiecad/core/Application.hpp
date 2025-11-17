@@ -18,19 +18,19 @@ public:
 	using LayerPtr = LayerStack::LayerPtr;
 
 	static Application& Get();
-	explicit Application(const ApplicationSpecification& spec);
+	explicit            Application(const ApplicationSpecification &spec);
 	~Application();
 
-	int run();
+	int  run();
 	void close() { m_running = false; }
 
 	void pushLayer(LayerPtr layer);
 	void pushOverlay(LayerPtr overlay);
 
-	LayerStack& getLayerStack() { return m_layerStack; }
-	const LayerStack& getLayerStack() const { return m_layerStack; }
-	std::shared_ptr<EventBus>& getEventBus() { return m_eventBus; }
-	Window& getWindow() { return *m_window; }
+	LayerStack&                     getLayerStack() { return *m_layerStack; }
+	const LayerStack&               getLayerStack() const { return *m_layerStack; }
+	EventBus&                       getEventBus() { return *m_eventBus; }
+	Window&                         getWindow() { return *m_window; }
 	const ApplicationSpecification& getSpecification() const { return m_spec; }
 
 private:
@@ -43,14 +43,14 @@ private:
 	void pushAllLayers();
 
 	/* Member variables */
-	ApplicationSpecification m_spec;
-	std::shared_ptr<EventBus> m_eventBus;
-	LayerStack m_layerStack;
-	std::unique_ptr<Window> m_window;
+	ApplicationSpecification    m_spec;
+	std::unique_ptr<EventBus>   m_eventBus;
+	std::unique_ptr<LayerStack> m_layerStack;
+	std::unique_ptr<Window>     m_window;
 
 	EventSubscription m_appShutdownSub;
-	std::atomic<bool> m_running {true};
+	std::atomic<bool> m_running{ true };
 
-	static inline Application* s_instance{nullptr};
+	static inline Application *s_instance{ nullptr };
 };
 } // namespace aiecad
