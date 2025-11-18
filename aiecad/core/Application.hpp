@@ -1,7 +1,7 @@
 #pragma once
 
+#include <aiecad/ui/UI.hpp>
 #include <aiecad/core/Window.hpp>
-#include <aiecad/core/Layer.hpp>
 #include <aiecad/core/LayerStack.hpp>
 #include <aiecad/core/Specifications.hpp>
 #include <aiecad/core/events/EventBus.hpp>
@@ -47,6 +47,7 @@ private:
 	std::unique_ptr<EventBus>   m_eventBus;
 	std::unique_ptr<LayerStack> m_layerStack;
 	std::unique_ptr<Window>     m_window;
+	std::unique_ptr<ImGuiFramework> m_ui;
 
 	EventSubscription m_appShutdownSub;
 	std::atomic<bool> m_running{ true };

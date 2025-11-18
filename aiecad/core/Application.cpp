@@ -57,6 +57,12 @@ void Application::init() {
 	pushAllLayers();
 }
 
+/*
+ * This shutdown method contains fragile teardown / tight coupling.
+ * The shutdown order here assumes implicit knowledge, meaning we
+ * have to rely on the developers discipline instead of the compiler
+ * enforcing correctness.
+ */
 void Application::shutdown() {
 	AIECAD_CORE_INFO("Shutting down Application subsystems");
 
@@ -65,6 +71,8 @@ void Application::shutdown() {
 
 	// don't change order
 	m_layerStack.reset();
+	m_ui->shutdown();
+	m_ui.reset();
 	m_eventBus.reset();
 	m_window.reset();
 }
@@ -72,25 +80,17 @@ void Application::shutdown() {
 int Application::run() {
 	AIECAD_CORE_INFO("Starting main loop for '{}'", m_spec.title);
 
-	ImGuiLayer *ui { nullptr };
-
-	for (auto &layer : *m_layerStack) {
-		if (auto *l = dynamic_cast<ImGuiLayer*>(layer.get())) {
-			ui = l;
-			break;
-		}
-	}
-
 	auto ts = Timestep();
 	ts.start();
 	while (m_running) {
 		float dt = ts.getDelta();
-
-		ui->begin();
+		ts.update();
+		
+		m_ui->beginFrame();
 		for (auto &layer : *m_layerStack) {
 			layer->onUpdate(dt);
 		}
-		ui->end();
+		m_ui->endFrame();
 
 		m_window->onUpdate();
 	}
@@ -108,7 +108,8 @@ void Application::pushOverlay(LayerPtr overlay) {
 }
 
 void Application::setupUIFramework() {
-	pushLayer(std::make_unique<ImGuiLayer>(*m_window));
+	m_ui = std::make_unique<ImGuiFramework>(*m_window);
+	m_ui->init();
 }
 
 void Application::pushAllLayers() {

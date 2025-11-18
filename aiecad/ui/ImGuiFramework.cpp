@@ -1,4 +1,4 @@
-#include <aiecad/ui/ImGuiLayer.hpp>
+#include <aiecad/ui/ImGuiFramework.hpp>
 #include <aiecad/ui/UIStyle.hpp>
 #include <aiecad/core/logging/Logger.hpp>
 #include <aiecad/Portability.hpp>
@@ -14,10 +14,10 @@
 
 namespace aiecad {
 
-ImGuiLayer::ImGuiLayer(Window& window)
-	: Layer("ImGuiLayer"), m_window(window) {}
+ImGuiFramework::ImGuiFramework(Window& window)
+	: m_window(window) {}
 
-void ImGuiLayer::onAttach() {
+void ImGuiFramework::init() {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -34,11 +34,13 @@ void ImGuiLayer::onAttach() {
 
 	AIECAD_CORE_INFO("ImGuiLayer attached");
 
+	// TODO: applying styles must come with a mechanism for booting up.
+	// This is temporary patch
 	UIStyle::ApplyDarkTheme();
 	AIECAD_INFO("Applied Dark theme to the UI");
 }
 
-void ImGuiLayer::onDetach() {
+void ImGuiFramework::shutdown() {
 #if AIECAD_RENDER_API_OPENGL
 	ImGui_ImplOpenGL3_Shutdown();
 #elif AIECAD_RENDER_API_METAL
@@ -48,10 +50,10 @@ void ImGuiLayer::onDetach() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 
-	AIECAD_CORE_INFO("ImGuiLayer detached");
+	AIECAD_CORE_INFO("Shutting down dear ImGui rendering");
 }
 
-void ImGuiLayer::begin() {
+void ImGuiFramework::beginFrame() {
 #if AIECAD_RENDER_API_OPENGL
 	ImGui_ImplOpenGL3_NewFrame();
 #elif AIECAD_RENDER_API_METAL
@@ -62,7 +64,7 @@ void ImGuiLayer::begin() {
 	ImGui::NewFrame();
 }
 
-void ImGuiLayer::end() {
+void ImGuiFramework::endFrame() {
 	ImGui::Render();
 
 #if AIECAD_RENDER_API_OPENGL
