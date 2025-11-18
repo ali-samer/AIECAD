@@ -39,6 +39,7 @@ private:
 	void shutdown();
 
 	void setupWindowCallbacks();
+	void setupEventSubscription();
 	void setupUIFramework();
 	void pushAllLayers();
 

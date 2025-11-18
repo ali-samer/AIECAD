@@ -53,6 +53,7 @@ void Application::setupWindowCallbacks() {
 
 void Application::init() {
 	AIECAD_CORE_INFO("Initializing Application subsystems");
+	setupEventSubscription();
 	setupUIFramework();
 	pushAllLayers();
 }
@@ -69,10 +70,13 @@ void Application::shutdown() {
 	// redundant call but just in case :0
 	close();
 
+	if (m_ui) {
+		m_ui->shutdown();
+		m_ui.reset();
+	}
+
 	// don't change order
 	m_layerStack.reset();
-	m_ui->shutdown();
-	m_ui.reset();
 	m_eventBus.reset();
 	m_window.reset();
 }
@@ -89,6 +93,9 @@ int Application::run() {
 		m_ui->beginFrame();
 		for (auto &layer : *m_layerStack) {
 			layer->onUpdate(dt);
+		}
+		for (auto &layer : *m_layerStack) {
+			layer->onImGuiRender();
 		}
 		m_ui->endFrame();
 
@@ -107,6 +114,15 @@ void Application::pushOverlay(LayerPtr overlay) {
 	m_layerStack->pushOverlay(std::move(overlay));
 }
 
+void Application::setupEventSubscription() {
+	m_appShutdownSub = m_eventBus->subscribe<AppShutdownEvent>(
+		[&](const AppShutdownEvent&) {
+			close();
+		}
+	);
+}
+
+
 void Application::setupUIFramework() {
 	m_ui = std::make_unique<ImGuiFramework>(*m_window);
 	m_ui->init();
@@ -119,5 +135,8 @@ void Application::pushAllLayers() {
 	//
 	// pushLayer(std::make_unique<ViewportLayer>(getEventBus(), ...));
 	// pushOverlay(std::make_unique<DebugOverlay>(getEventBus(), ...));
+
+	pushLayer(std::make_unique<MenuBar>(*m_eventBus));
+	pushLayer(std::make_unique<DockSpace>());
 }
 } // namespace aiecad
