@@ -1,6 +1,7 @@
 #pragma once
 
 #include <aiecad/ui/menu/GlobalMenuItem.hpp>
+#include <aiecad/macros/Macros.hpp>
 
 #include <memory>
 #include <vector>
@@ -12,10 +13,7 @@ public:
 	GlobalMenuBar() = default;
 	~GlobalMenuBar() = default;
 
-	GlobalMenuBar(const GlobalMenuBar&) = delete;
-	GlobalMenuBar& operator=(const GlobalMenuBar&) = delete;
-	GlobalMenuBar(GlobalMenuBar&&) = delete;
-	GlobalMenuBar& operator=(GlobalMenuBar&&) = delete;
+	AIECAD_DELETE_COPY_AND_MOVE(GlobalMenuBar);
 
 	void registerItem(std::unique_ptr<GlobalMenuItem> item);
 	void render();

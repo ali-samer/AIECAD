@@ -5,13 +5,14 @@
 #include <aiecad/core/Layer.hpp>
 #include <aiecad/core/events/EventBus.hpp>
 #include <aiecad/ui/menu/GlobalMenuBar.hpp>
+#include <aiecad/ui/panels/PanelManager.hpp>
 #include <aiecad/macros/Macros.hpp>
 
 namespace aiecad {
 
 class MenuBar final : public Layer {
 public:
-	explicit MenuBar(EventBus& bus);
+	explicit MenuBar(EventBus& bus, PanelManager& panelManager);
 	~MenuBar() override = default;
 
 	AIECAD_DELETE_COPY_AND_MOVE(MenuBar);
@@ -26,7 +27,8 @@ public:
 
 private:
 	EventBus&                      m_bus;      // non-owning
-	std::unique_ptr<GlobalMenuBar> m_menuBar;  // single instance (logical singleton)
+	std::unique_ptr<GlobalMenuBar> m_menuBar;  // single container instance (logical singleton)
+	PanelManager& m_panelManager;
 };
 
 } // namespace aiecad

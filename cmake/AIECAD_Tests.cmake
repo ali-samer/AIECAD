@@ -42,4 +42,7 @@ aiecad_define_tests(
                     EventBusThreadTests.cpp
 
         TEST LayerStackTests SOURCES LayerStackTests.cpp
+
+    DIRECTORY test/ui/
+        TEST PanelManager SOURCES PanelManagerTests.cpp
 )

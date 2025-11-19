@@ -8,7 +8,7 @@ void FileMenuItem::onDrawMenuContents() {
 		m_bus.publish(AppShutdownEvent{});
 	}
 
-	// Later: "Open Project", "Save", "Recent Projects", etc.
+	// TODO: Later – "Open Project", "Save", "Recent Projects", etc...
 }
 
 } // namespace aiecad

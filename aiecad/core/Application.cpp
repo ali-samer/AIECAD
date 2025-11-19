@@ -12,7 +12,8 @@ Application& Application::Get() {
 Application::Application(const ApplicationSpecification &spec)
 	: m_spec(spec)
 	  , m_eventBus(std::make_unique<EventBus>())
-	  , m_layerStack(std::make_unique<LayerStack>()) {
+	  , m_layerStack(std::make_unique<LayerStack>())
+	  , m_panelManager(std::make_unique<PanelManager>(*m_eventBus)) {
 	if (s_instance != nullptr) {
 		AIECAD_CORE_FATAL("Attempted to create another Application instance");
 		throw std::runtime_error("Application instance already exists");
@@ -41,11 +42,10 @@ Application::~Application() {
 
 void Application::setupWindowCallbacks() {
 	m_window->setCloseCallback([this]() {
-		AIECAD_CORE_INFO("Main window requested close");
-		close();
+		m_eventBus->publish(AppShutdownEvent{});
 	});
 
-	// TODO: requires additional implementation details
+	// TODO: requires additional implementation details. Current implementation of our windowing system does not implement this method
 	m_window->setResizeCallback([this](auto width, auto height) {
 		AIECAD_CORE_INFO("Main window resized to {}x{}", width, height);
 	});
@@ -117,11 +117,11 @@ void Application::pushOverlay(LayerPtr overlay) {
 void Application::setupEventSubscription() {
 	m_appShutdownSub = m_eventBus->subscribe<AppShutdownEvent>(
 		[&](const AppShutdownEvent&) {
+			AIECAD_CORE_INFO("Main window requested close");
 			close();
 		}
 	);
 }
-
 
 void Application::setupUIFramework() {
 	m_ui = std::make_unique<ImGuiFramework>(*m_window);
@@ -129,14 +129,8 @@ void Application::setupUIFramework() {
 }
 
 void Application::pushAllLayers() {
-	// TODO:
-	// This is where to instantiate the core UI layers.
-	// Example (once concrete layers are in place):
-	//
-	// pushLayer(std::make_unique<ViewportLayer>(getEventBus(), ...));
-	// pushOverlay(std::make_unique<DebugOverlay>(getEventBus(), ...));
-
-	pushLayer(std::make_unique<MenuBar>(*m_eventBus));
+	pushLayer(std::make_unique<MenuBar>(*m_eventBus, *m_panelManager));
 	pushLayer(std::make_unique<DockSpace>());
+	pushLayer(std::make_unique<PanelHostLayer>(*m_eventBus, *m_panelManager));
 }
 } // namespace aiecad

@@ -19,4 +19,9 @@ struct MessageEvent {
 };
 
 struct AppShutdownEvent {};
+
+/* -- Panel Events -- */
+struct TogglePanelEvent {
+	std::string id;
+};
 } // namespace aiecad

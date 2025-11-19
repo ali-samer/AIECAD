@@ -99,7 +99,6 @@ void ImGuiFramework::shutdownBackends() {
 
 void ImGuiFramework::shutdownContext() {
     ImGui::DestroyContext();
-    // ImGui::IsKeyPressed()
 }
 
 void ImGuiFramework::beginFrame() {

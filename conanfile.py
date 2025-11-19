@@ -4,6 +4,7 @@ from pathlib import Path
 from conan import ConanFile
 from conan.tools.cmake import cmake_layout
 from conan.tools.files import copy
+from conan.errors import ConanInvalidConfiguration
 
 required_conan_version = ">=2.0"
 
@@ -46,3 +47,16 @@ class Deps(ConanFile):
 
         # If we want backends next to the generated CMake files instead:
         # bindings_dst = os.path.join(self.generators_folder, "bindings")
+
+    def validate(self):
+        cppstd = self.settings.get_safe("compiler.cppstd")
+        if cppstd is None:
+            raise ConanInvalidConfiguration(
+                "compiler.cppstd must be set (e.g. 23 or gnu23) to build this project"
+            )
+
+        if "23" not in str(cppstd) and "20" not in str(cppstd):
+            raise ConanInvalidConfiguration(
+                f"Project requires at least C++20 (got '{cppstd}'). "
+                "Please set compiler.cppstd=20 or compiler.cppstd=23 in your profile."
+            )
