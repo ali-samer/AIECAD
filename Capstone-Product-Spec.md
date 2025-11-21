@@ -104,11 +104,28 @@ The GUI enables users to:
 
 ### 7.1. Golden Reference Validation
 
-- Users provide a _golden reference_ output file (e.g., `.npy`, `.csv`, `.txt`).
-- After JIT execution, GUI automatically compares the NPU output to the reference.
-- The tool computes and displays:
-  - Pass/fail result per output tensor.
-  - Mean absolute or relative error.
+- The GUI can optionally be provided a golden reference for a given input set; users may upload a golden reference file (.npy or .pt) or by providing runtime information about the runtime data in the GUI so the tool can generate a golden reference automatically.
+
+- Input provisioning
+
+  - Runtime information can be uploaded via the Variable Table or a dedicated Main Memory component in the UI. Each input set defined in the GUI is associated with its own generated golden reference.
+  - Uploaded golden reference sets are treated as separate test cases and are executed/compared independently from any GUI-specified input sets.
+
+- Golden reference generation modes
+
+  - Synchronous (default): the golden reference is computed on the CPU before the NPU run; the GUI then executes the design using the same inputs and performs the diff as soon as the NPU output is available.
+  - Post-run: the golden reference is computed after the NPU execution finishes; the diff is performed when both outputs are available.
+
+- Execution and comparison behavior
+
+  - The GUI prevents final result reporting until a golden reference exists for the active input set(s). If the user provides external golden files, those runs proceed independently and are compared separately.
+  - When both outputs are available, the GUI computes pass/fail and numeric summaries (mean absolute error, relative error, per-element mismatches) and highlights mismatches in the UI.
+  - Results dashboard summarizes per-input-set status, timings for CPU and NPU runs, and comparison metrics.
+
+- UX/Logging
+
+  - The UI shows separate progress indicators for golden reference generation and NPU execution, and a unified notification when diffs complete.
+  - Errors in golden generation, input mismatches, or missing mappings are surfaced before execution to avoid wasted runs.
 
 ### 7.2. Graph Validation
 
