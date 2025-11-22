@@ -76,6 +76,12 @@ void Application::shutdown() {
 	}
 
 	// don't change order
+	// *********************
+	// Important note!
+	// - It's important to destroy any object that contains an event subscription before the event bus dtor
+	// is called to ensure we're not tyring to request a lock on a destroyed `mutex`.
+	m_appShutdownSub.reset();
+	m_panelManager.reset();
 	m_layerStack.reset();
 	m_eventBus.reset();
 	m_window.reset();
@@ -131,6 +137,6 @@ void Application::setupUIFramework() {
 void Application::pushAllLayers() {
 	pushLayer(std::make_unique<MenuBar>(*m_eventBus, *m_panelManager));
 	pushLayer(std::make_unique<DockSpace>());
-	pushLayer(std::make_unique<PanelHostLayer>(*m_eventBus, *m_panelManager));
+	pushOverlay(std::make_unique<PanelHostLayer>(*m_eventBus, *m_panelManager));
 }
 } // namespace aiecad

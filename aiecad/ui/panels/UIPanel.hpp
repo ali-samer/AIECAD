@@ -1,5 +1,6 @@
 #pragma once
 
+#include <imgui.h>
 #include <string_view>
 
 namespace aiecad {
@@ -7,6 +8,7 @@ namespace aiecad {
 enum class PanelCategory {
 	Editor,
 	Tool,
+	View,
 	Diagnostic
 };
 

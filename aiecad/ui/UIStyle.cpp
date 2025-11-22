@@ -156,4 +156,145 @@ void UIStyle::ApplyDraculaTheme() {
 	style->TabRounding       = 0.0f;
 	style->WindowRounding    = 4.0f;
 }
+
+void UIStyle::ApplyAIECADTheme() {
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImVec4* colors    = style.Colors;
+
+	const ImVec4 bg0      = ImVec4(0.10f, 0.11f, 0.13f, 1.0f); // main window background
+	const ImVec4 bg1      = ImVec4(0.13f, 0.14f, 0.17f, 1.0f); // child / panels
+	const ImVec4 bg2      = ImVec4(0.17f, 0.18f, 0.21f, 1.0f); // frames
+	const ImVec4 bgHover  = ImVec4(0.20f, 0.22f, 0.26f, 1.0f);
+	const ImVec4 bgActive = ImVec4(0.24f, 0.26f, 0.30f, 1.0f);
+
+	const ImVec4 text      = ImVec4(0.92f, 0.94f, 0.96f, 1.0f);
+	const ImVec4 textMuted = ImVec4(0.55f, 0.57f, 0.60f, 1.0f);
+
+	const ImVec4 accent        = ImVec4(0.07f, 0.76f, 0.71f, 1.0f); // teal
+	const ImVec4 accentHover   = ImVec4(0.11f, 0.84f, 0.78f, 1.0f);
+	const ImVec4 accentActive  = ImVec4(0.02f, 0.62f, 0.63f, 1.0f);
+	const ImVec4 accentLowFill = ImVec4(accent.x, accent.y, accent.z, 0.20f);
+
+	colors[ImGuiCol_Text]           = text;
+	colors[ImGuiCol_TextDisabled]   = textMuted;
+	colors[ImGuiCol_WindowBg]       = bg0;
+	colors[ImGuiCol_ChildBg]        = bg1;
+	colors[ImGuiCol_PopupBg]        = ImVec4(bg0.x, bg0.y, bg0.z, 0.98f);
+	colors[ImGuiCol_Border]         = ImVec4(0.17f, 0.18f, 0.20f, 1.0f);
+	colors[ImGuiCol_BorderShadow]   = ImVec4(0, 0, 0, 0);
+
+	colors[ImGuiCol_FrameBg]        = bg2;
+	colors[ImGuiCol_FrameBgHovered] = bgHover;
+	colors[ImGuiCol_FrameBgActive]  = bgActive;
+
+	colors[ImGuiCol_TitleBg]            = bg0;
+	colors[ImGuiCol_TitleBgActive]      = bg1;
+	colors[ImGuiCol_TitleBgCollapsed]   = bg0;
+	colors[ImGuiCol_MenuBarBg]          = bg1;
+
+	colors[ImGuiCol_ScrollbarBg]        = bg0;
+	colors[ImGuiCol_ScrollbarGrab]      = ImVec4(0.28f, 0.30f, 0.34f, 1.0f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.33f, 0.35f, 0.40f, 1.0f);
+	colors[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.40f, 0.42f, 0.47f, 1.0f);
+
+	colors[ImGuiCol_CheckMark]          = accent;
+	colors[ImGuiCol_SliderGrab]         = accent;
+	colors[ImGuiCol_SliderGrabActive]   = accentActive;
+
+	colors[ImGuiCol_Button]             = bg2;
+	colors[ImGuiCol_ButtonHovered]      = bgHover;
+	colors[ImGuiCol_ButtonActive]       = bgActive;
+
+	colors[ImGuiCol_Header]             = ImVec4(bg2.x, bg2.y, bg2.z, 0.90f);
+	colors[ImGuiCol_HeaderHovered]      = bgHover;
+	colors[ImGuiCol_HeaderActive]       = bgActive;
+
+	colors[ImGuiCol_Separator]          = ImVec4(0.22f, 0.24f, 0.27f, 1.0f);
+	colors[ImGuiCol_SeparatorHovered]   = accent;
+	colors[ImGuiCol_SeparatorActive]    = accentActive;
+
+	colors[ImGuiCol_ResizeGrip]         = ImVec4(0.30f, 0.32f, 0.36f, 0.80f);
+	colors[ImGuiCol_ResizeGripHovered]  = accent;
+	colors[ImGuiCol_ResizeGripActive]   = accentActive;
+
+	colors[ImGuiCol_Tab]                = ImVec4(bg1.x, bg1.y, bg1.z, 1.0f);
+	colors[ImGuiCol_TabHovered]         = ImVec4(bgHover.x, bgHover.y, bgHover.z, 1.0f);
+	colors[ImGuiCol_TabActive]          = ImVec4(bg2.x, bg2.y, bg2.z, 1.0f);
+	colors[ImGuiCol_TabUnfocused]       = ImVec4(bg1.x, bg1.y, bg1.z, 1.0f);
+	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(bg2.x, bg2.y, bg2.z, 1.0f);
+
+	colors[ImGuiCol_DockingPreview]     = accentLowFill;
+	colors[ImGuiCol_DockingEmptyBg]     = bg0;
+
+	colors[ImGuiCol_PlotLines]          = accent;
+	colors[ImGuiCol_PlotLinesHovered]   = accentHover;
+	colors[ImGuiCol_PlotHistogram]      = accent;
+	colors[ImGuiCol_PlotHistogramHovered] = accentHover;
+
+	colors[ImGuiCol_TableHeaderBg]      = bg1;
+	colors[ImGuiCol_TableBorderStrong]  = ImVec4(0.22f, 0.24f, 0.27f, 1.0f);
+	colors[ImGuiCol_TableBorderLight]   = ImVec4(0.18f, 0.20f, 0.23f, 1.0f);
+	colors[ImGuiCol_TableRowBg]         = ImVec4(bg1.x, bg1.y, bg1.z, 0.0f);
+	colors[ImGuiCol_TableRowBgAlt]      = ImVec4(bg1.x, bg1.y, bg1.z, 0.60f);
+
+	colors[ImGuiCol_TextSelectedBg]     = accentLowFill;
+	colors[ImGuiCol_DragDropTarget]     = accentHover;
+	colors[ImGuiCol_NavHighlight]       = accent;
+	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1, 1, 1, 0.80f);
+	colors[ImGuiCol_NavWindowingDimBg]  = ImVec4(0, 0, 0, 0.40f);
+	colors[ImGuiCol_ModalWindowDimBg]   = ImVec4(0, 0, 0, 0.60f);
+
+	// Layout and rounding settings
+	style.WindowPadding     = ImVec2(10.0f, 10.0f);
+	style.FramePadding      = ImVec2(8.0f, 4.0f);
+	style.CellPadding       = ImVec2(6.0f, 4.0f);
+	style.ItemSpacing       = ImVec2(8.0f, 6.0f);
+	style.ItemInnerSpacing  = ImVec2(6.0f, 3.0f);
+	style.IndentSpacing     = 20.0f;
+	style.ScrollbarSize     = 14.0f;
+	style.GrabMinSize       = 10.0f;
+
+	style.WindowBorderSize  = 1.0f;
+	style.ChildBorderSize   = 1.0f;
+	style.PopupBorderSize   = 1.0f;
+	style.FrameBorderSize   = 0.0f;
+	style.TabBorderSize     = 0.0f;
+
+	style.WindowRounding    = 6.0f;
+	style.ChildRounding     = 4.0f;
+	style.FrameRounding     = 4.0f;
+	style.PopupRounding     = 4.0f;
+	style.ScrollbarRounding = 8.0f;
+	style.GrabRounding      = 4.0f;
+	style.TabRounding       = 5.0f;
+
+	style.WindowTitleAlign           = ImVec2(0.0f, 0.50f); // left-align title
+	style.ColorButtonPosition        = ImGuiDir_Right;
+	style.WindowMenuButtonPosition   = ImGuiDir_Right;
+	style.DisplaySafeAreaPadding     = ImVec2(4.0f, 4.0f);
+}
+
+void UIStyle::ConfigureFont(const char* ttfPath, float sizePixels) {
+	ImGuiIO& io = ImGui::GetIO();
+
+	// keep default font for icon merging, if you use it
+	// io.Fonts->AddFontDefault();
+
+	ImFont* font = io.Fonts->AddFontFromFileTTF(
+	    ttfPath,
+	    sizePixels,
+	    nullptr,
+	    nullptr // default glyph ranges
+	);
+
+	if (font) {
+		io.FontDefault = font;
+	} else {
+		// Fallback: at least have some font
+		if (io.Fonts->Fonts.empty()) {
+			io.Fonts->AddFontDefault();
+		}
+	}
+}
+
 } // namespace aiecad

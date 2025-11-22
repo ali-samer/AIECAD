@@ -16,11 +16,11 @@ public:
 	AIECAD_DELETE_COPY_AND_MOVE(EventSubscriptionGroup);
 
 	void  operator +=(EventSubscription &&sub) { m_subscriptions.emplace_back(std::move(sub)); }
-	auto& operator [](int i) { return get(i); }
 
 	void  clear() noexcept { m_subscriptions.clear(); }
 	int   size() const noexcept { return static_cast<int>(m_subscriptions.size()); }
 	auto& get(int index) { return m_subscriptions.at(index); }
+	auto& operator [](int i) { return get(i); }
 
 private:
 	Container m_subscriptions;

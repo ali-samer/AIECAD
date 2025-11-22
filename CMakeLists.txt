@@ -35,12 +35,15 @@ set(CMAKE_INSTALL_DIR lib/cmake/aiecad CACHE STRING
         "The subdirectory where CMake configuration files should be installed"
 )
 
+
 include(settings/ProjectOptions)
 aiecad_set_options()
 
 set(TOP_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(AIECAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/aiecad")
 string(REGEX REPLACE "(.)" [[\\\1]] AIECAD_DIR_REGEX_ESCAPED "${AIECAD_DIR}")
+
+file(COPY "${TOP_DIR}/assets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 include(checks/AIECADPlatformChecks)
 include(utils/AIECADAutoSource)
@@ -50,7 +53,6 @@ aiecad_auto_source(
         DIRECTORIES         "${AIECAD_DIR}"
         EXCLUDE_DIRECTORIES
             "${AIECAD_DIR}/test"
-            "${AIECAD_DIR}/memory"
             "${AIECAD_DIR}/aiecad-compiler"
         EXTENSIONS          cpp
         TRAVERSE            RECURSE

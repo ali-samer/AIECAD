@@ -1,6 +1,7 @@
 #pragma once
 
 #include <aiecad/core/Layer.hpp>
+#include <aiecad/core/events/EventSubscriptionGroup.hpp>
 #include <aiecad/core/events/EventBus.hpp>
 #include <aiecad/ui/panels/PanelManager.hpp>
 
@@ -23,6 +24,8 @@ public:
 private:
 	PanelManager& m_panelManager;
 	EventBus& m_bus;
+
+	EventSubscriptionGroup m_subs;
 };
 
 } // namespace aiecad

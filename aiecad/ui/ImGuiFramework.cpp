@@ -58,7 +58,8 @@ void ImGuiFramework::initContext() {
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    UIStyle::ApplyDarkTheme();
+    UIStyle::ConfigureFont("assets/fonts/ttf/JetBrainsMono-Regular.ttf", 15.0f);
+    UIStyle::ApplyAIECADTheme();
 
     // set ini filename (layout persistence)
     // io.IniFilename = "aiecad_layout.ini";

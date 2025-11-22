@@ -18,6 +18,9 @@ public:
 
 	static void ApplyDarkTheme();
 	static void ApplyDraculaTheme();
+	static void ApplyAIECADTheme();
+
+	static void ConfigureFont(const char* ttfPath, float sizePixels = 15.0f);
 };
 } // namespace aiecad
 

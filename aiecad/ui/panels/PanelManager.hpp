@@ -37,6 +37,12 @@ public:
 		return m_panels;
 	}
 
+	int contains(std::string_view id) const noexcept {
+		return std::find_if(m_panels.begin(), m_panels.end(), [id](const auto& panel) {
+			return panel->id() == id;
+		}) != m_panels.end();
+	}
+
 private:
 	UIPanel*       findPanel(std::string_view id) noexcept;
 	const UIPanel* findPanel(std::string_view id) const noexcept;

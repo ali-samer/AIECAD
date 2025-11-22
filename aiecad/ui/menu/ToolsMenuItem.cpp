@@ -4,10 +4,13 @@
 
 #include <imgui.h>
 
+#include "aiecad/ui/panels/ProjectExplorer.hpp"
+
 namespace aiecad {
 
 void ToolsMenuItem::onDrawMenuContents() {
 	populatePanel<DeviceConnectionPanel>();
+	populatePanel<ProjectExplorer>();
 }
 
 } // namespace aiecad
