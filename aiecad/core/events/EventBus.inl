@@ -14,7 +14,7 @@ EventSubscription EventBus::subscribe(Listener<EventType> listener) {
 	};
 
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
+		std::lock_guard lock(m_mutex);
 		auto& vec = m_listeners[type];
 		vec.push_back(ListenerRecord{id, std::move(erased)});
 	}

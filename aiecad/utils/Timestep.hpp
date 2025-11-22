@@ -10,13 +10,14 @@ public:
 	auto  step() const { return clock::now(); }
 	void  start() { m_last = step(); }
 	float getDelta() {
-		m_dt = (step() - m_last).count();
+		const auto delta = std::chrono::duration<float>(step() - m_last);
+		m_dt = delta.count(); // seconds
 		return m_dt;
 	}
 	void  update() { start(); }
 
 private:
-	double            m_dt {};
+	float             m_dt {};
 	clock::time_point m_last{};
 };
 } // namespace aiecad

@@ -102,15 +102,19 @@ void ImGuiFramework::shutdownContext() {
 }
 
 void ImGuiFramework::beginFrame() {
-    if (!m_initialized) {
-        AIECAD_CORE_WARN("ImGuiFramework::beginFrame() called before init()");
-        return;
-    }
+	if (!m_initialized) {
+		AIECAD_CORE_WARN("ImGuiFramework::beginFrame() called before init()");
+		return;
+	}
+	if (ImGui::GetCurrentContext() == nullptr) {
+		AIECAD_CORE_WARN("ImGuiFramework::beginFrame() with no ImGui context");
+		return;
+	}
 
 #if AIECAD_RENDER_API_OPENGL
-    ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplOpenGL3_NewFrame();
 #elif AIECAD_RENDER_API_METAL
-    ImGui_ImplMetal_NewFrame();
+	ImGui_ImplMetal_NewFrame();
 #endif
 
     ImGui_ImplGlfw_NewFrame();
@@ -118,11 +122,16 @@ void ImGuiFramework::beginFrame() {
 }
 
 void ImGuiFramework::endFrame() {
-    if (!m_initialized) {
-        return;
-    }
+	if (!m_initialized) {
+		AIECAD_CORE_WARN("ImGuiFramework::endFrame() called before init()");
+		return;
+	}
+	if (ImGui::GetCurrentContext() == nullptr) {
+		AIECAD_CORE_WARN("ImGuiFramework::endFrame() with no ImGui context");
+		return;
+	}
 
-    ImGui::Render();
+	ImGui::Render();
 
 #if AIECAD_RENDER_API_OPENGL
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
