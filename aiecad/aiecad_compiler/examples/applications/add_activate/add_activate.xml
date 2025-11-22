@@ -1845,21 +1845,26 @@
             <Assign>
                 <target>mismatches</target>
                 <source>
-                    <call>
-                        <function name="np.where">
-                            <arg>
-                                <unary_op op="~">
-                                    <call>
-                                        <function name="np.isclose">
-                                            <arg><var>actual</var></arg>
-                                            <arg><var>expected</var></arg>
-                                            <kwarg name="rtol"><var>tolerance</var></kwarg>
-                                        </function>
-                                    </call>
-                                </unary_op>
-                            </arg>
-                        </function>
-                    </call>
+                    <index>
+                        <base>
+                            <call>
+                                <function name="np.where">
+                                    <arg>
+                                        <unary_op op="~">
+                                            <call>
+                                                <function name="np.isclose">
+                                                    <arg><var>actual</var></arg>
+                                                    <arg><var>expected</var></arg>
+                                                    <kwarg name="rtol"><var>tolerance</var></kwarg>
+                                                </function>
+                                            </call>
+                                        </unary_op>
+                                    </arg>
+                                </function>
+                            </call>
+                        </base>
+                        <index_value><const>0</const></index_value>
+                    </index>
                 </source>
             </Assign>
 
