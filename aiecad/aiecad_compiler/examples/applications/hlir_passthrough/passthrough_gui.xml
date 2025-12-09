@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<Module name="passthroughjit">
+<Module name="passthrough_hlir_example">
     <Symbols>
         <TypeAbstraction name="vector_ty">
             <ndarray>
@@ -9,7 +9,7 @@
         </TypeAbstraction>
         <TypeAbstraction name="line_ty">
             <ndarray>
-                <shape>N // 4</shape>
+                <shape>N / 4</shape>
                 <dtype>int32</dtype>
             </ndarray>
         </TypeAbstraction>
@@ -37,7 +37,7 @@
             <placer>SequentialPlacer</placer>
         </Program>
     </DataFlow>
-    <Function name="jit_function" decorator="iron.jit" entry="passthroughjit_jit">
+    <Function name="jit_function" decorator="iron.jit" entry="passthrough_hlir_example_jit">
         <parameters>
             <param name="inputA" type="vector_ty"/>
             <param name="outputC" type="vector_ty"/>

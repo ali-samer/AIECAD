@@ -47,13 +47,12 @@ def build_passthrough_design():
 
     # Add constants
     builder.add_constant("N", 4096, "int")
-    builder.add_constant("line_size", 1024, "int")
-    print("[2] Added constants: N=4096, line_size=1024")
+    print("[2] Added constant: N=4096")
 
     # Add type definitions
-    builder.add_tensor_type("line_ty", shape=["line_size"], dtype="int32")
     builder.add_tensor_type("vector_ty", shape=["N"], dtype="int32")
-    print("[3] Added type definitions: line_ty, vector_ty")
+    builder.add_tensor_type("line_ty", shape=["N / 4"], dtype="int32")
+    print("[3] Added type definitions: vector_ty, line_ty (with N / 4 shape)")
 
     # Add tiles
     shim = builder.add_tile("shim0", kind="shim", x=0, y=0)
@@ -72,15 +71,15 @@ def build_passthrough_design():
     rt = builder.create_runtime("runtime")
     rt.add_input_type("vector_ty")
     rt.add_output_type("vector_ty")
-    rt.add_params(["a_in", "c_out"])
-    rt.add_fill("fill_0", "of_in", "a_in", "shim0")
-    rt.add_drain("drain_0", "of_out", "c_out", "shim0", wait=True)
+    rt.add_params(["inputA", "outputC"])
+    rt.add_fill("fill_0", "of_in", "inputA", "shim0")
+    rt.add_drain("drain_0", "of_out", "outputC", "shim0", wait=True)
     rt.build()
     print("    - Added input type: vector_ty")
     print("    - Added output type: vector_ty")
-    print("    - Added parameters: a_in, c_out")
-    print("    - Added fill operation: a_in -> of_in")
-    print("    - Added drain operation: of_out -> c_out")
+    print("    - Added parameters: inputA, outputC")
+    print("    - Added fill operation: inputA -> of_in")
+    print("    - Added drain operation: of_out -> outputC")
 
     # Build program with validation
     print("\n[8] Building and validating program...")

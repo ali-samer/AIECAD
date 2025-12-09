@@ -1,4 +1,4 @@
-# passthroughjit.py -*- Python -*-
+# passthrough_hlir_example.py -*- Python -*-
 
 
 import numpy as np
@@ -17,10 +17,10 @@ from aie.helpers.taplib import TensorAccessPattern
 
 
 @iron.jit(is_placed=False)
-def passthroughjit_jit(inputA, outputC):
+def passthrough_hlir_example_jit(inputA, outputC):
     # Define tensor types
     vector_ty = np.ndarray[(inputA.numel(),), np.dtype[np.int32]]
-    line_ty = np.ndarray[(inputA.numel() // "?",), np.dtype[np.int32]]
+    line_ty = np.ndarray[(inputA.numel() // 4,), np.dtype[np.int32]]
 
     # Data movement with ObjectFifos
     of_in = ObjectFifo(obj_type=line_ty, depth=2, name="of_in")
@@ -45,7 +45,7 @@ def main():
     N = 4096
     inputA = iron.arange(N, dtype=np.int32, device="npu")
     outputC = iron.zeros(N, dtype=np.int32, device="npu")
-    passthroughjit_jit(inputA, outputC)
+    passthrough_hlir_example_jit(inputA, outputC)
 
 
 
