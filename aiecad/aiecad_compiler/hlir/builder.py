@@ -612,7 +612,8 @@ class RuntimeBuilder:
             placement=placement,
             fifo=fifo,
             source_param=source_param,
-            tap=tap
+            tap=tap,
+            metadata=metadata
         )
         self.runtime.operations.append(fill_op)
         return self
@@ -646,7 +647,8 @@ class RuntimeBuilder:
             fifo=fifo,
             dest_param=dest_param,
             wait=wait,
-            tap=tap
+            tap=tap,
+            metadata=metadata
         )
         self.runtime.operations.append(drain_op)
         return self

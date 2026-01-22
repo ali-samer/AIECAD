@@ -229,21 +229,26 @@ class Worker:
 class RuntimeOp:
     """Base class for runtime operations (fill/drain)."""
     placement: Tile
+    metadata: dict = None  # Additional attributes (column, use_tap, etc.)
+
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
 
 
 @dataclass
 class RuntimeFill(RuntimeOp):
     """Fill operation: Host -> NPU."""
-    fifo: Union[ObjectFifo, str]
-    source_param: str  # Runtime sequence parameter
+    fifo: Union[ObjectFifo, str] = None
+    source_param: str = None  # Runtime sequence parameter
     tap: Optional[Any] = None  # TensorAccessPattern or None
 
 
 @dataclass
 class RuntimeDrain(RuntimeOp):
     """Drain operation: NPU -> Host."""
-    fifo: Union[ObjectFifo, str]
-    dest_param: str  # Runtime sequence parameter
+    fifo: Union[ObjectFifo, str] = None
+    dest_param: str = None  # Runtime sequence parameter
     wait: bool = True
     tap: Optional[Any] = None  # TensorAccessPattern or None
 
