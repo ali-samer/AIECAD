@@ -1,9 +1,8 @@
 // main.cpp
 #include <iostream>
-#include <aiecad/core/Application.hpp>
-#include <aiecad/core/Specifications.hpp>  // AppSpecification
 
 int main(int /*argc*/, char ** /*argv*/) {
+    /*
     aiecad::ApplicationSpecification spec{
         .name = "AIECAD",
         .window_spec.width = 1600,
@@ -18,5 +17,6 @@ int main(int /*argc*/, char ** /*argv*/) {
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
     }
+    */
     return 0;
 }

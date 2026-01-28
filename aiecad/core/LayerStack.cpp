@@ -1,55 +1,66 @@
+#include <iostream>
+#include <ostream>
 #include <aiecad/core/LayerStack.hpp>
-#include <algorithm>
 
 namespace aiecad {
 
+LayerStack::LayerStack() = default;
+
 LayerStack::~LayerStack() {
-	// unique_ptr will destroy layers automatically; we just give them
-	// a chance to detach first.
-	for (auto& layer : m_layers) {
-		if (layer) {
-			layer->onDetach();
+	for (auto it = m_layers.rbegin(); it != m_layers.rend(); ++it) {
+		if (*it) {
+			(*it)->onDetach();
 		}
 	}
 }
 
 void LayerStack::pushLayer(LayerPtr layer) {
-	// Insert before first overlay.
-	Layer* raw = layer.get();
-	m_layers.insert(m_layers.begin() + static_cast<std::ptrdiff_t>(m_overlayInsertIndex),
+	if (!layer) {
+		return;
+	}
+
+	layer->onAttach();
+	m_layers.insert(m_layers.begin() + static_cast<std::ptrdiff_t>(m_layerInsertIndex),
 					std::move(layer));
-	++m_overlayInsertIndex;
-	raw->onAttach();
+	++m_layerInsertIndex;
 }
 
 void LayerStack::pushOverlay(LayerPtr overlay) {
-	Layer* raw = overlay.get();
+	if (!overlay) {
+		return;
+	}
+
+	overlay->onAttach();
 	m_layers.emplace_back(std::move(overlay));
-	raw->onAttach();
 }
 
 void LayerStack::popLayer(Layer* layer) {
-	auto it = std::find_if(
-		m_layers.begin(),
-		m_layers.begin() + static_cast<std::ptrdiff_t>(m_overlayInsertIndex),
-		[layer](const LayerPtr& ptr) { return ptr.get() == layer; }
-	);
-	if (it != m_layers.begin() + static_cast<std::ptrdiff_t>(m_overlayInsertIndex)) {
-		(*it)->onDetach();
-		m_layers.erase(it);
-		--m_overlayInsertIndex;
+	if (!layer) {
+		std::cerr << "LayerStack::popLayer: layer is null" << std::endl;
+		return;
+	}
+
+	for (std::size_t i = 0; i < m_layerInsertIndex; ++i) {
+		if (m_layers[i].get() == layer) {
+			m_layers[i]->onDetach();
+			m_layers.erase(m_layers.begin() + static_cast<std::ptrdiff_t>(i));
+			--m_layerInsertIndex;
+			return;
+		}
 	}
 }
 
 void LayerStack::popOverlay(Layer* overlay) {
-	auto it = std::find_if(
-		m_layers.begin() + static_cast<std::ptrdiff_t>(m_overlayInsertIndex),
-		m_layers.end(),
-		[overlay](const LayerPtr& ptr) { return ptr.get() == overlay; }
-	);
-	if (it != m_layers.end()) {
-		(*it)->onDetach();
-		m_layers.erase(it);
+	if (!overlay) {
+		return;
+	}
+
+	for (std::size_t i = m_layerInsertIndex; i < m_layers.size(); ++i) {
+		if (m_layers[i].get() == overlay) {
+			m_layers[i]->onDetach();
+			m_layers.erase(m_layers.begin() + static_cast<std::ptrdiff_t>(i));
+			return;
+		}
 	}
 }
 

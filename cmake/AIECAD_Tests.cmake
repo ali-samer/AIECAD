@@ -36,4 +36,10 @@ include(cmake/utils/Functions.cmake)
 aiecad_define_tests(
     DIRECTORY test/core/
         TEST StressTestLogger SOURCES LoggerTest.cpp
+        TEST EventBus
+            SOURCES EventBusBasicTests.cpp
+                    EventBusRaiiTests.cpp
+                    EventBusThreadTests.cpp
+
+        TEST LayerStackTests SOURCES LayerStackTests.cpp
 )

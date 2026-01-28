@@ -10,9 +10,6 @@ if (NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     check_include_file_cxx(jemalloc/jemalloc.h AIECAD_USE_JEMALLOC)
 endif ()
 
-# Detect weak-symbol support via a tiny try-run.
-# Result: AIECAD_HAVE_WEAK_SYMBOLS (BOOL)
-
 if (MSVC)
     set(AIECAD_HAVE_WEAK_SYMBOLS OFF CACHE BOOL "" FORCE)
 else()

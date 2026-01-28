@@ -4,100 +4,50 @@
 #include <aiecad/macros/Macros.hpp>
 
 #include <functional>
-#include <typeindex>
 #include <unordered_map>
-#include <cstddef>
 #include <vector>
-
-#include "Events.hpp"
+#include <typeindex>
 
 namespace aiecad {
-
-// Central in-process publish/subscribe hub.
-// Usage:
-//   struct MyEvent { int value; };
-//   EventBus bus;
-//   auto sub = bus.subscribe<MyEvent>([](const MyEvent& e) { ... });
-//   bus.publish(MyEvent{42});
 class EventBus {
 public:
-	using ListenerId = std::size_t;
+	EventBus()  = default;
+	~EventBus() = default;
+	AIECAD_DELETE_COPY_AND_MOVE(EventBus);
 
 	template < class EventType >
 	using Listener = std::function<void(const EventType &)>;
 
-	EventBus()  = default;
-	~EventBus() = default;
-	AIECAD_DISABLE_COPY_ASSIGNMENTS(EventBus)
+	using ListenerId = std::size_t;
 
-	template < typename EventType >
-	EventSubscription subscribe(Listener<EventType> listener) {
-		std::type_index typeIndex{ typeid(EventType) };
-		ListenerId      id = nextListenerId();
+	template < class EventType >
+	EventSubscription subscribe(Listener<EventType> listener);
 
-		auto erased = [fn = std::move(listener)] (const void* payload) {
-			fn(*static_cast<const EventType*>(payload));
-		};
+	template < class EventType >
+	void publish(const EventType &event);
 
-		auto& vec = m_listeners[typeIndex];
-		vec.push_back(ListenerRecord{id, std::move(erased)});
-		return {this, typeIndex, id};
-	}
-
-	template <typename EventType>
-	void unsubscribe(ListenerId id) {
-		unsubscribeInternal(std::type_index(typeid(EventType)), id);
-	}
-
-	template < typename EventType >
-	void publish(const EventType &event) {
-		std::type_index type{typeid(EventType)};
-		auto it = m_listeners.find(type);
-		if (it == m_listeners.end()) {
-			return;
-		}
-
-		auto listenersCopy = it->second;
-		for (const auto &record : listenersCopy) {
-			if (record.callback) {
-				record.callback(static_cast<const void*>(&event));
-			}
-		}
+	ListenerId getNextListenerId() {
+		std::lock_guard lock(m_mutex);
+		return ++IdCounter;
 	}
 
 private:
 	friend class EventSubscription;
+	using KeyType        = std::type_index;
+	using ErasedListener = std::function<void(const void *)>;
 
-	void unsubscribeInternal(std::type_index type, ListenerId id) {
-		auto it = m_listeners.find(type);
-		if (it == m_listeners.end()) {
-			return;
-		}
+	void unsubscribeInternal(KeyType type, ListenerId id);
 
-		auto &vec = it->second;
-		for (auto it = vec.begin(); it != vec.end(); ++it) {
-			if (it->id == id) {
-				vec.erase(it);
-				break;
-			}
-		}
-
-		if (vec.empty()) {
-			m_listeners.erase(type);
-		}
-	}
-
-	ListenerId nextListenerId() {
-		return ++m_lastId;
-	}
-
-private:
 	struct ListenerRecord {
-		ListenerId                        id;
-		std::function<void(const void *)> callback;
+		ListenerId     id;
+		ErasedListener cb;
 	};
+	using ListenerList = std::vector<ListenerRecord>;
+	ListenerId IdCounter{ 0 };
+	std::mutex m_mutex;
 
-	std::unordered_map<std::type_index, std::vector<ListenerRecord>> m_listeners;
-	ListenerId                                                       m_lastId{ 0 };
+	std::unordered_map<KeyType, ListenerList> m_listeners;
 };
-}
+} // namespace aiecad
+
+#include <aiecad/core/events/EventBus.inl>

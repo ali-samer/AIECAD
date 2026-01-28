@@ -104,10 +104,8 @@ configure_file(
         "${CMAKE_CURRENT_BINARY_DIR}/aiecad/aiecad-config.h"
 )
 
-# ---- optional manual override (keeps your auto-detect as default) ----
 set(AIECAD_IMGUI_BINDINGS_DIR "" CACHE PATH "Path to Dear ImGui backends/ folder (leave empty to auto-detect)")
 
-# ---- auto-detect backends dir by globbing the build tree (your approach) ----
 if (NOT AIECAD_IMGUI_BINDINGS_DIR)
     file(GLOB_RECURSE IMGUI_BINDING_CANDIDATES
             "${CMAKE_BINARY_DIR}/**/imgui_impl_glfw.cpp")
@@ -115,7 +113,6 @@ if (NOT AIECAD_IMGUI_BINDINGS_DIR)
     if (IMGUI_BINDING_CANDIDATES)
         list(REMOVE_DUPLICATES IMGUI_BINDING_CANDIDATES)
 
-        # Prefer a directory that also contains imgui_impl_opengl3.cpp
         set(_FOUND_DIR "")
         foreach(_cand ${IMGUI_BINDING_CANDIDATES})
             get_filename_component(_dir "${_cand}" DIRECTORY)
@@ -126,7 +123,6 @@ if (NOT AIECAD_IMGUI_BINDINGS_DIR)
         endforeach()
 
         if (NOT _FOUND_DIR)
-            # Fallback: take the directory of the first glfw impl we found
             get_filename_component(_FOUND_DIR "${IMGUI_BINDING_CANDIDATES}" DIRECTORY)
         endif()
 
@@ -137,7 +133,6 @@ if (NOT AIECAD_IMGUI_BINDINGS_DIR)
     endif()
 endif()
 
-# ---- core library ----
 list(APPEND aiecad_base_files ${src_files} ${header_files})
 
 add_library(aiecad_lib STATIC

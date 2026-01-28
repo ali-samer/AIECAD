@@ -1,6 +1,6 @@
 #pragma once
 
-#include <aiecad/macros/internal/Container.hpp>
+#include <aiecad/macros/internal/ObjectTraits.hpp>
 
 #ifndef AIECAD_STRINGIZE
 #	define AIECAD_STRINGIZE_IMPL(x) #x

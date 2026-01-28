@@ -9,7 +9,10 @@ public:
 	Timestep() = default;
 	auto  step() const { return clock::now(); }
 	void  start() { m_last = step(); }
-	float getDelta() { return (step() - m_last).count(); }
+	float getDelta() {
+		m_dt = (step() - m_last).count();
+		return m_dt;
+	}
 	void  update() { start(); }
 
 private:
