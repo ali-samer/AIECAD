@@ -4,6 +4,7 @@ A flexible, extensible, graph-based code generation system for AMD's Ryzen AI NP
 
 **Key Features:**
 - 🎯 **100% Functional Accuracy** - Generates correct code matching reference implementations
+- 🖥️ **GUI-Friendly XML** - Simplified XML format designed for GUI generation
 - 🔌 **Extensible Architecture** - Add new node types without modifying core code
 - 📊 **Graph-Based** - Pure semantic graph representation, no hardcoded patterns
 - 🔧 **Advanced AIE Support** - Workers, external functions, split/join, tensor access patterns
@@ -12,10 +13,24 @@ A flexible, extensible, graph-based code generation system for AMD's Ryzen AI NP
 
 ## Overview
 
-The AIECAD Compiler converts XML representations of IRON code into executable Python code through a two-stage process:
+The AIECAD Compiler converts XML representations of IRON code into executable Python code. The compiler supports **two XML input formats**:
 
-1. **GraphDriver**: Converts XML to semantic graph (GraphML)
-2. **CodeGenerator**: Generates Python code from semantic graph
+1. **GUI XML** (`*_gui.xml`): Simplified, user-friendly format designed for GUI generation
+2. **Complete XML** (`*.xml`): Full specification format with all implementation details
+
+### Code Generation Pipeline
+
+```
+GUI XML → XMLGenerator → Complete XML → GraphDriver → GraphML → CodeGenerator → Python Code
+                                ↓
+                          Semantic Graph
+```
+
+**Three-Stage Process:**
+
+1. **XMLGenerator** (Optional - GUI XML only): Expands simplified GUI XML into complete specifications
+2. **GraphDriver**: Converts complete XML to semantic graph (GraphML)
+3. **CodeGenerator**: Generates Python code from semantic graph
 
 The system is designed to be **completely flexible** and **highly extensible** - no code patterns are hardcoded. All code generation is driven purely by graph structure traversal, and new node types can be added without modifying core compiler code through the extension system.
 
@@ -56,16 +71,26 @@ pip install lxml networkx
 ### Basic Usage
 
 ```bash
-# Generate code from XML
+# Generate from GUI XML (recommended for new projects)
+python main.py examples/applications/passthrough2/passthrough_gui.xml
+
+# Generate from complete XML (for advanced users)
 python main.py examples/applications/passthrough/passthrough.xml
 
-# Generate and execute code
-python main.py examples/applications/passthrough/passthrough.xml --run
+# Generate and execute
+python main.py examples/applications/passthrough2/passthrough_gui.xml --run
 ```
 
 **Output Files** (created in same directory as input XML):
-- `<name>.graphml` - Semantic graph (for debugging/visualization)
-- `generated_<name>.py` - Python code (ready to run)
+
+When processing `passthrough_gui.xml`:
+- `passthrough_complete.xml` - Expanded complete XML
+- `passthrough.graphml` - Semantic graph (for debugging/visualization)
+- `generated_passthrough.py` - Python code (ready to run)
+
+When processing `passthrough.xml`:
+- `passthrough.graphml` - Semantic graph
+- `generated_passthrough.py` - Python code
 
 ### Quick Reference
 
@@ -78,18 +103,27 @@ python main.py examples/applications/passthrough/passthrough.xml --run
 
 ### Examples
 
-**Simple Passthrough (Basic):**
+**Simple Passthrough (GUI XML - Recommended):**
 ```bash
-# Generate code only
-python main.py examples/applications/passthrough/passthrough.xml
+# Generate from GUI-friendly XML
+python main.py examples/applications/passthrough2/passthrough_gui.xml
 
 # Generate and execute
-python main.py examples/applications/passthrough/passthrough.xml --run
+python main.py examples/applications/passthrough2/passthrough_gui.xml --run
 ```
 
-**Add-Activate (Advanced with Extensions):**
+**Add-Activate (GUI XML with Advanced Features):**
 ```bash
-# Uses Worker, ExternalFunction, CoreFunction, Split, Join
+# Uses Worker, ExternalFunction, CoreFunction, Split, Join with GUI XML
+python main.py examples/applications/add_activate2/add_activate_gui.xml
+```
+
+**Complete XML Examples (Advanced Users):**
+```bash
+# Passthrough with complete XML
+python main.py examples/applications/passthrough/passthrough.xml
+
+# Add-Activate with complete XML
 python main.py examples/applications/add_activate/add_activate.xml
 ```
 
@@ -115,7 +149,177 @@ IRON Code Generation System
 ======================================================================
 ```
 
+## GUI XML Format
+
+### Overview
+
+GUI XML provides a simplified, user-friendly format designed for GUI generation. The XMLGenerator automatically expands GUI XML into complete XML specifications that can be processed by the GraphDriver.
+
+### Key Features
+
+1. **Simplified Type Definitions** - Write `N` instead of `inputA.numel()`
+2. **Context-Based Naming** - Automatic semantic name generation using templates
+3. **Expression Expansion** - Simple expressions like `N / 4` expand to `(inputA.numel() // 4)`
+4. **ObjectFifo Operations** - Simplified split, join, and forward operations
+5. **TensorAccessPattern Control** - `use_tap` flag for complex vs simple DMA operations
+
+### Simplified Type Definitions
+
+**GUI XML:**
+```xml
+<TypeAbstraction name="vector_ty">
+    <ndarray>
+        <shape>N</shape>
+        <dtype>int32</dtype>
+    </ndarray>
+</TypeAbstraction>
+```
+
+**Expands to Complete XML:**
+```xml
+<TypeAbstraction name="vector_ty">
+    <ndarray>
+        <shape>
+            <tuple>
+                <expr><method ref="inputA" name="numel"/></expr>
+            </tuple>
+        </shape>
+        <dtype><numpy_dtype>int32</numpy_dtype></dtype>
+    </ndarray>
+</TypeAbstraction>
+```
+
+### Context-Based Naming
+
+ObjectFifos with context attributes generate semantic names automatically:
+
+**GUI XML:**
+```xml
+<ObjectFifo name="of_in_a" context="L3_L2" direction="input" data="A" column="0">
+    <type>chunk_ty</type>
+    <depth>2</depth>
+</ObjectFifo>
+```
+
+**Generated Name:** `SHIM_L3_L2_A1A2_col0`
+
+**Naming Templates:**
+
+| Context | Template | Example |
+|---------|----------|---------|
+| L3_L2 | `SHIM_L3_L2_{data}{workers}_col{column}` | `SHIM_L3_L2_A1A2_col0` |
+| L2_L3 | `SHIM_L2_L3_{data}{workers}_col{column}` | `SHIM_L2_L3_D1D2_col0` |
+| L2_L1 | `MEM_L2_L1_{data}{workers}_col{column}` | `MEM_L2_L1_A1A2_col0` |
+| L1_L2 | `MEM_L1_L2_{data}{workers}_col{column}` | `MEM_L1_L2_D1D2_col0` |
+| L1_L1 | `L1_L1_{stage}_{worker}` | `L1_L1_add_to_relu_1` |
+
+### ObjectFifo Operations
+
+**Split Operation:**
+```xml
+<ObjectFifoSplit name="split_a" context="L2_L1" data="A" column="0">
+    <source>of_in_a_col0</source>
+    <num_outputs>2</num_outputs>
+    <output_type>worker_chunk_ty</output_type>
+    <placement>Tile(0, 1)</placement>
+</ObjectFifoSplit>
+```
+
+**Join Operation:**
+```xml
+<ObjectFifoJoin name="join_d" context="L1_L2" data="D" column="0">
+    <dest>of_out_d_col0</dest>
+    <num_inputs>2</num_inputs>
+    <input_type>worker_chunk_ty</input_type>
+    <placement>Tile(0, 1)</placement>
+</ObjectFifoJoin>
+```
+
+**Forward Operation:**
+```xml
+<ObjectFifoForward name="of_out" source="of_in"/>
+```
+
+Expands to: `of_out = of_in.cons().forward()`
+
+### TensorAccessPattern Control
+
+The `use_tap` attribute controls whether complex TensorAccessPattern is generated:
+
+**Simple Form** (`use_tap="false"` - for single column):
+```xml
+<Fill target="of_in" source="a_in" use_tap="false">
+    <placement>Tile(0, 0)</placement>
+</Fill>
+```
+
+Generates:
+```python
+rt.fill(of_in.prod(), a_in)
+```
+
+**Complex Form** (`use_tap="true"` - for multi-column):
+```xml
+<Fill target="of_in_a_col0" source="A" column="0" use_tap="true">
+    <placement>Tile(0, 0)</placement>
+</Fill>
+```
+
+Generates:
+```python
+rt.fill(placement=Tile(0, 0),
+        in_fifo=SHIM_L3_L2_A1A2_col0.prod(),
+        source=A,
+        tap=TensorAccessPattern(
+            tensor_dims=[inputA.numel()],
+            offset=((inputA.numel() // 4) * 0),
+            sizes=[((inputA.numel() // 4) // (inputA.numel() // 8)), (inputA.numel() // 8)],
+            strides=[(inputA.numel() // 8), 1]
+        ))
+```
+
+### Expression Expansion
+
+The XMLGenerator automatically expands simplified expressions:
+
+| GUI Expression | Expanded Expression |
+|----------------|---------------------|
+| `N` | `inputA.numel()` |
+| `N / 4` | `(inputA.numel() // 4)` |
+| `N / 8` | `(inputA.numel() // 8)` |
+| `data_size` | Resolved to actual value |
+
+### GUI XML Examples
+
+**Example 1: Passthrough (Simple)**
+- Location: `examples/applications/passthrough2/passthrough_gui.xml`
+- Features: Basic ObjectFifo forward, simple fill/drain
+- Use case: Single-column data passthrough
+
+**Example 2: Add-Activate (Complex)**
+- Location: `examples/applications/add_activate2/add_activate_gui.xml`
+- Features: Multi-column parallelism, split/join, TensorAccessPattern
+- Use case: 4-column element-wise addition + ReLU activation
+
 ## System Design
+
+### XMLGenerator Architecture (Stage 0)
+
+**Purpose:** Transform GUI-friendly XML into complete XML specifications
+
+**Key Components:**
+- **NamingConventions**: Template-based naming for generated elements
+- **ExpressionExpander**: Expands GUI expressions to full Python expressions
+- **MethodChainBuilder**: Generates method chains for ObjectFifo operations
+- **XMLTransformer**: Main orchestrator for transformation
+
+**Transformation Process:**
+1. Parse GUI XML
+2. Expand type definitions
+3. Generate semantic names from context
+4. Build method chains for operations
+5. Add TensorAccessPattern based on `use_tap` flag
+6. Output complete XML
 
 ### GraphDriver Architecture
 
