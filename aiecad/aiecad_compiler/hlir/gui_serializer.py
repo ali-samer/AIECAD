@@ -116,10 +116,24 @@ class GUIXMLSerializer:
 
     def _add_symbols(self, parent: Element, program: Program):
         """Add symbols section in GUI XML format."""
+        # Add constants first
+        for symbol in program.symbols.values():
+            if symbol.is_constant and not isinstance(symbol.value, TensorType):
+                self._add_gui_const(parent, symbol)
+
         # Add type definitions
         for symbol in program.symbols.values():
             if isinstance(symbol.value, TensorType):
                 self._add_gui_type_abstraction(parent, symbol.name, symbol.value)
+
+    def _add_gui_const(self, parent: Element, symbol: Symbol):
+        """Add constant in GUI XML format."""
+        const_elem = SubElement(parent, 'Const')
+        const_elem.set('name', symbol.name)
+        if symbol.type_hint:
+            const_elem.set('type', symbol.type_hint)
+        const_elem.text = str(symbol.value)
+        const_elem.tail = '\n'
 
     def _add_gui_type_abstraction(self, parent: Element, name: str, tensor_type: TensorType):
         """Add TensorType in GUI XML format (simplified)."""
@@ -154,6 +168,14 @@ class GUIXMLSerializer:
 
     def _add_dataflow(self, parent: Element, program: Program):
         """Add DataFlow section in GUI XML format."""
+        # Add External Kernels
+        for kernel in program.external_kernels.values():
+            self._add_gui_external_kernel(parent, kernel)
+
+        # Add Core Functions
+        for func in program.core_functions.values():
+            self._add_gui_core_function(parent, func)
+
         # Add ObjectFifos
         for fifo in program.fifos.values():
             self._add_gui_object_fifo(parent, fifo)
@@ -177,6 +199,112 @@ class GUIXMLSerializer:
 
         # Add Program definition
         self._add_gui_program(parent, program)
+
+    def _add_gui_external_kernel(self, parent: Element, kernel: ExternalKernel):
+        """Add ExternalFunction in GUI XML format."""
+        ext_elem = SubElement(parent, 'ExternalFunction')
+        ext_elem.set('name', kernel.name)
+
+        # Add metadata as attributes
+        for key, value in kernel.metadata.items():
+            ext_elem.set(key, str(value))
+
+        ext_elem.text = '\n'
+        ext_elem.tail = '\n'
+
+        # Kernel name
+        kernel_elem = SubElement(ext_elem, 'kernel')
+        kernel_elem.text = kernel.kernel_name
+        kernel_elem.tail = '\n'
+
+        # Source file
+        source_elem = SubElement(ext_elem, 'source')
+        source_elem.text = kernel.source_file
+        source_elem.tail = '\n'
+
+        # Arg types
+        arg_types_elem = SubElement(ext_elem, 'arg_types')
+        arg_types_elem.text = '\n'
+        arg_types_elem.tail = '\n'
+
+        for arg_type in kernel.arg_types:
+            type_elem = SubElement(arg_types_elem, 'type')
+            type_elem.text = str(arg_type)
+            type_elem.tail = '\n'
+
+    def _add_gui_core_function(self, parent: Element, func: CoreFunction):
+        """Add CoreFunction in GUI XML format."""
+        func_elem = SubElement(parent, 'CoreFunction')
+        func_elem.set('name', func.name)
+
+        # Add metadata as attributes
+        for key, value in func.metadata.items():
+            func_elem.set(key, str(value))
+
+        func_elem.text = '\n'
+        func_elem.tail = '\n'
+
+        # Parameters
+        params_elem = SubElement(func_elem, 'parameters')
+        params_elem.text = '\n'
+        params_elem.tail = '\n'
+
+        # Infer roles from position: first is kernel, rest based on acquires/releases
+        for i, param_name in enumerate(func.parameters):
+            param_elem = SubElement(params_elem, 'param')
+            param_elem.set('name', param_name)
+
+            # Determine role
+            if i == 0:
+                role = "external_function"
+            else:
+                # Check if this param is in acquires (consumer) or only in releases (producer)
+                is_acquire = any(acq.fifo_param == param_name for acq in func.acquires)
+                is_release = any(rel.fifo_param == param_name for rel in func.releases)
+
+                if is_acquire and not is_release:
+                    role = "consumer"
+                elif is_release and not is_acquire:
+                    role = "producer"
+                elif is_acquire and is_release:
+                    # Both acquire and release - check kernel call to determine
+                    # If it's an output parameter, it's producer, otherwise consumer
+                    if func.kernel_call and param_name in func.kernel_call.args[2:]:
+                        role = "producer"
+                    else:
+                        role = "consumer"
+                else:
+                    role = "unknown"
+
+            param_elem.set('role', role)
+            param_elem.tail = '\n'
+
+        # Body
+        body_elem = SubElement(func_elem, 'body')
+        body_elem.text = '\n'
+        body_elem.tail = '\n'
+
+        # Acquires
+        for acquire in func.acquires:
+            acq_elem = SubElement(body_elem, 'Acquire')
+            acq_elem.set('source', acquire.fifo_param)
+            acq_elem.set('count', str(acquire.count))
+            acq_elem.set('name', acquire.local_var)
+            acq_elem.tail = '\n'
+
+        # Kernel call
+        if func.kernel_call:
+            call_elem = SubElement(body_elem, 'Call')
+            call_elem.set('function', func.kernel_call.kernel_param)
+            call_elem.set('args', ', '.join(func.kernel_call.args))
+            call_elem.tail = '\n'
+
+        # Releases
+        for release in func.releases:
+            rel_elem = SubElement(body_elem, 'Release')
+            rel_elem.set('source', release.fifo_param)
+            rel_elem.set('count', str(release.count))
+            rel_elem.tail = '\n'
 
     def _add_gui_object_fifo(self, parent: Element, fifo: ObjectFifo):
         """Add ObjectFifo in GUI XML format."""
@@ -207,26 +335,29 @@ class GUIXMLSerializer:
         """Add split operation in GUI XML format."""
         split_elem = SubElement(parent, 'ObjectFifoSplit')
         split_elem.set('name', split_op.name)
-        source_name = split_op.source if isinstance(split_op.source, str) else split_op.source.name
-        split_elem.set('source', source_name)
-        split_elem.set('num_outputs', str(split_op.num_outputs))
+
+        # Add metadata as attributes
+        for key, value in split_op.metadata.items():
+            split_elem.set(key, str(value))
+
         split_elem.text = '\n'
         split_elem.tail = '\n'
+
+        # Source as child element
+        source_name = split_op.source if isinstance(split_op.source, str) else split_op.source.name
+        source_elem = SubElement(split_elem, 'source')
+        source_elem.text = source_name
+        source_elem.tail = '\n'
+
+        # Number of outputs
+        num_elem = SubElement(split_elem, 'num_outputs')
+        num_elem.text = str(split_op.num_outputs)
+        num_elem.tail = '\n'
 
         # Output type
         type_elem = SubElement(split_elem, 'output_type')
         type_elem.text = str(split_op.output_type)
         type_elem.tail = '\n'
-
-        # Output names
-        names_elem = SubElement(split_elem, 'output_names')
-        names_elem.text = ', '.join(split_op.output_names)
-        names_elem.tail = '\n'
-
-        # Offsets
-        offsets_elem = SubElement(split_elem, 'offsets')
-        offsets_elem.text = ', '.join(str(o) for o in split_op.offsets)
-        offsets_elem.tail = '\n'
 
         # Placement
         place_elem = SubElement(split_elem, 'placement')
@@ -237,26 +368,29 @@ class GUIXMLSerializer:
         """Add join operation in GUI XML format."""
         join_elem = SubElement(parent, 'ObjectFifoJoin')
         join_elem.set('name', join_op.name)
-        dest_name = join_op.dest if isinstance(join_op.dest, str) else join_op.dest.name
-        join_elem.set('dest', dest_name)
-        join_elem.set('num_inputs', str(join_op.num_inputs))
+
+        # Add metadata as attributes
+        for key, value in join_op.metadata.items():
+            join_elem.set(key, str(value))
+
         join_elem.text = '\n'
         join_elem.tail = '\n'
+
+        # Dest as child element
+        dest_name = join_op.dest if isinstance(join_op.dest, str) else join_op.dest.name
+        dest_elem = SubElement(join_elem, 'dest')
+        dest_elem.text = dest_name
+        dest_elem.tail = '\n'
+
+        # Number of inputs
+        num_elem = SubElement(join_elem, 'num_inputs')
+        num_elem.text = str(join_op.num_inputs)
+        num_elem.tail = '\n'
 
         # Input type
         type_elem = SubElement(join_elem, 'input_type')
         type_elem.text = str(join_op.input_type)
         type_elem.tail = '\n'
-
-        # Input names
-        names_elem = SubElement(join_elem, 'input_names')
-        names_elem.text = ', '.join(join_op.input_names)
-        names_elem.tail = '\n'
-
-        # Offsets
-        offsets_elem = SubElement(join_elem, 'offsets')
-        offsets_elem.text = ', '.join(str(o) for o in join_op.offsets)
-        offsets_elem.tail = '\n'
 
         # Placement
         place_elem = SubElement(join_elem, 'placement')
@@ -265,10 +399,13 @@ class GUIXMLSerializer:
 
     def _add_gui_worker(self, parent: Element, worker: Worker):
         """Add Worker in GUI XML format."""
-        # Note: Workers in GUI XML might need external kernel and core function info
-        # This is a simplified version
         worker_elem = SubElement(parent, 'Worker')
         worker_elem.set('name', worker.name)
+
+        # Add metadata as attributes
+        for key, value in worker.metadata.items():
+            worker_elem.set(key, str(value))
+
         worker_elem.text = '\n'
         worker_elem.tail = '\n'
 
@@ -277,6 +414,31 @@ class GUIXMLSerializer:
         cf_elem = SubElement(worker_elem, 'core_function')
         cf_elem.text = cf_name
         cf_elem.tail = '\n'
+
+        # Arguments section
+        args_elem = SubElement(worker_elem, 'arguments')
+        args_elem.text = '\n'
+        args_elem.tail = '\n'
+
+        # Add each argument
+        for arg in worker.fn_args:
+            arg_elem = SubElement(args_elem, 'arg')
+            if isinstance(arg, FifoBinding):
+                # It's a FIFO binding
+                fifo_name = arg.fifo if isinstance(arg.fifo, str) else arg.fifo.name
+                arg_elem.set('ref', fifo_name)
+                if arg.index is not None:
+                    arg_elem.set('index', str(arg.index))
+                # Map enum values to full words for GUI XML
+                mode_str = 'consumer' if arg.mode.value == 'cons' else 'producer'
+                arg_elem.set('mode', mode_str)
+            elif isinstance(arg, str):
+                # It's a reference (e.g., to external kernel)
+                arg_elem.set('ref', arg)
+            else:
+                # Other types
+                arg_elem.set('ref', str(arg))
+            arg_elem.tail = '\n'
 
         # Placement
         place_elem = SubElement(worker_elem, 'placement')
@@ -335,9 +497,13 @@ class GUIXMLSerializer:
         # Source parameter
         fill_elem.set('source', fill_op.source_param)
 
-        # Use TAP
-        use_tap = "true" if fill_op.tap else "false"
-        fill_elem.set('use_tap', use_tap)
+        # Column attribute from metadata
+        if fill_op.metadata and 'column' in fill_op.metadata:
+            fill_elem.set('column', str(fill_op.metadata['column']))
+
+        # Use TAP - check both metadata and tap field
+        use_tap = fill_op.metadata.get('use_tap', fill_op.tap is not None) if fill_op.metadata else (fill_op.tap is not None)
+        fill_elem.set('use_tap', "true" if use_tap else "false")
 
         fill_elem.text = '\n'
         fill_elem.tail = '\n'
@@ -362,9 +528,13 @@ class GUIXMLSerializer:
         # Target parameter
         drain_elem.set('target', drain_op.dest_param)
 
-        # Use TAP
-        use_tap = "true" if drain_op.tap else "false"
-        drain_elem.set('use_tap', use_tap)
+        # Column attribute from metadata
+        if drain_op.metadata and 'column' in drain_op.metadata:
+            drain_elem.set('column', str(drain_op.metadata['column']))
+
+        # Use TAP - check both metadata and tap field
+        use_tap = drain_op.metadata.get('use_tap', drain_op.tap is not None) if drain_op.metadata else (drain_op.tap is not None)
+        drain_elem.set('use_tap', "true" if use_tap else "false")
 
         drain_elem.text = '\n'
         drain_elem.tail = '\n'
@@ -489,12 +659,46 @@ class GUIXMLSerializer:
         body_elem.text = '\n'
         body_elem.tail = '\n'
 
-        # Add N assignment if we have it
-        if 'N' in program.symbols:
+        # Extract tensor size and dtype from runtime input types
+        size_expr = None
+        dtype_value = None
+
+        if program.runtime and len(program.runtime.input_types) > 0:
+            # Get first input type to determine size and dtype
+            first_type_ref = program.runtime.input_types[0]
+            if isinstance(first_type_ref, str) and first_type_ref in program.symbols:
+                tensor_type = program.symbols[first_type_ref].value
+                if isinstance(tensor_type, TensorType):
+                    # Extract size from shape
+                    if tensor_type.shape and len(tensor_type.shape) > 0:
+                        size_expr = str(tensor_type.shape[0])
+                    # Extract dtype
+                    if tensor_type.dtype:
+                        dtype_value = str(tensor_type.dtype.value)
+
+        # Add variable assignments for constants used in size expression
+        # Find all constant symbols
+        constants_to_assign = {}
+        for name, symbol in program.symbols.items():
+            if symbol.is_constant and not isinstance(symbol.value, TensorType):
+                constants_to_assign[name] = symbol.value
+
+        # Add datatype variable if we found a dtype
+        if dtype_value:
             assign_elem = SubElement(body_elem, 'Assign')
-            assign_elem.set('name', 'N')
-            assign_elem.set('value', str(program.symbols['N'].value))
+            assign_elem.set('name', 'datatype')
+            assign_elem.set('value', dtype_value)
             assign_elem.tail = '\n'
+
+        # Add constant assignments
+        for const_name, const_value in constants_to_assign.items():
+            assign_elem = SubElement(body_elem, 'Assign')
+            assign_elem.set('name', const_name)
+            assign_elem.set('value', str(const_value))
+            assign_elem.tail = '\n'
+
+        # Add blank line for readability
+        body_elem.text = '\n'
 
         # Add tensor initializations
         if program.runtime and program.runtime.param_names:
@@ -505,11 +709,15 @@ class GUIXMLSerializer:
                 tensor_elem.tail = '\n'
 
                 init_elem = SubElement(tensor_elem, 'init')
+                # Use extracted size and dtype, or defaults
+                size_arg = size_expr if size_expr else 'data_size'
+                dtype_arg = 'datatype' if dtype_value else 'bfloat16'
+
                 # Determine if input or output
                 if i < len(program.runtime.input_types):
-                    init_elem.text = f'iron.arange(N, dtype=np.int32, device="npu")'
+                    init_elem.text = f'iron.arange({size_arg}, dtype={dtype_arg}, device="npu")'
                 else:
-                    init_elem.text = f'iron.zeros(N, dtype=np.int32, device="npu")'
+                    init_elem.text = f'iron.zeros({size_arg}, dtype={dtype_arg}, device="npu")'
                 init_elem.tail = '\n'
 
         # Call JIT function

@@ -295,8 +295,239 @@ See [hlir/README.md](README.md) for comprehensive API documentation, examples, a
 - Full pipeline validated
 - Example tested end-to-end
 - Documentation complete
+- **NEW**: Enhanced with ID tracking and interactive editing
 
 ---
 
-**Version**: 1.0.0
-**Date**: 2025-01-20
+## Enhanced Features for GUI Integration
+
+### Version 2.0 - Interactive Editing Support
+
+The HLIR builder has been enhanced with ID tracking, component management, and interactive editing capabilities to support GUI-driven design workflows.
+
+### 1. Automatic ID Tracking
+
+Every component created through the builder is automatically assigned a unique UUID:
+
+```python
+builder = ProgramBuilder("my_design")
+
+# All add_* methods track IDs internally
+builder.add_constant("data_size", 128, "int")
+builder.add_tensor_type("chunk_ty", shape=["data_size / 4"], dtype="bfloat16")
+builder.add_tile("shim0", kind="shim", x=0, y=0)
+builder.add_fifo("of_in", obj_type="chunk_ty", depth=2)
+
+# Internal tracking:
+# - _id_map: uuid -> (component_type, component)
+# - _name_index: (type, name) -> uuid
+# - _component_to_id: id(obj) -> uuid
+```
+
+### 2. Component Removal with Dependency Checking
+
+Remove components by ID with automatic dependency validation:
+
+```python
+# Look up component
+result = builder.lookup_by_name('fifo', 'of_in')
+if result.success:
+    fifo_id = result.id
+
+# Remove with dependency checking
+remove_result = builder.remove(fifo_id)
+
+if not remove_result.success:
+    if remove_result.error_code == ErrorCode.DEPENDENCY_EXISTS:
+        print(f"Cannot remove: {remove_result.error_message}")
+        print(f"Blocked by: {remove_result.dependencies}")
+```
+
+**Dependency Protection:**
+- Cannot remove TensorType if FIFOs reference it
+- Cannot remove Tile if Workers are placed on it
+- Cannot remove FIFO if Workers reference it
+
+### 3. Update/Replace Operations
+
+Replace components (useful for GUI edit operations):
+
+```python
+# Original FIFO
+old_result = builder.lookup_by_name('fifo', 'of_in')
+
+# Create replacement
+new_fifo = builder.add_fifo("of_in_v2", obj_type="chunk_ty", depth=4)
+new_result = builder.lookup_by_name('fifo', 'of_in_v2')
+
+# Replace old with new
+update_result = builder.update_fifo(old_result.id, new_result.id)
+# 'of_in' removed, 'of_in_v2' now active
+```
+
+### 4. Lookup Operations
+
+**Lookup by ID:**
+```python
+result = builder.lookup_by_id(component_id)
+if result.success:
+    component = result.component
+```
+
+**Lookup by name:**
+```python
+result = builder.lookup_by_name('fifo', 'of_in_a_col0')
+if result.success:
+    fifo_id = result.id
+    fifo = result.component
+```
+
+**Get all IDs by type:**
+```python
+all_fifos = builder.get_all_ids('fifo')
+for fifo_id, fifo in all_fifos.items():
+    print(f"{fifo_id}: {fifo.name}")
+```
+
+### 5. XML Import
+
+Load and edit existing GUI XML designs:
+
+```python
+# Import from XML
+builder = ProgramBuilderFromXML("existing_design_gui.xml")
+
+# Modify
+result = builder.lookup_by_name('fifo', 'old_fifo')
+if result.success:
+    builder.remove(result.id)
+
+builder.add_fifo("new_fifo", "chunk_ty", 2)
+
+# Export back
+serializer = GUIXMLSerializer()
+program = builder.build()
+serializer.serialize_to_file(program, "modified_design_gui.xml")
+```
+
+### 6. BuilderResult Type
+
+All new methods return `BuilderResult` with comprehensive status:
+
+```python
+@dataclass
+class BuilderResult:
+    success: bool                    # Operation succeeded?
+    id: Optional[str]                # Component UUID
+    component: Optional[Any]         # Component object
+    error_code: Optional[ErrorCode]  # Error classification
+    error_message: Optional[str]     # Human-readable error
+    dependencies: Optional[List[str]] # Blocking dependencies
+```
+
+**Error Codes:**
+- `SUCCESS`: Operation completed
+- `DUPLICATE_NAME`: Component name already exists
+- `NOT_FOUND`: Component ID not found
+- `DEPENDENCY_EXISTS`: Cannot remove due to dependencies
+- `INVALID_PARAMETER`: Invalid operation parameters
+
+### 7. Duplicate Detection
+
+Automatic prevention of duplicate names:
+
+```python
+builder.add_fifo("of_in", obj_type="chunk_ty", depth=2)
+
+# Raises ValueError
+builder.add_fifo("of_in", obj_type="chunk_ty", depth=4)
+# ValueError: FIFO 'of_in' already exists
+```
+
+## Testing
+
+Comprehensive test suite validates all enhanced features:
+
+```bash
+cd aiecad/aiecad_compiler
+python test_enhanced_builder.py
+```
+
+**Tests:**
+- [OK] ID Tracking - Components get unique IDs
+- [OK] Duplicate Detection - Prevents duplicate names
+- [OK] Remove with Dependencies - Blocks unsafe removals
+- [OK] Update FIFO - Replace components
+- [OK] Lookup Operations - Find by ID/name/type
+- [OK] XML Round-trip - Export and import
+
+## Files Modified
+
+### New Files
+- **`builder_result.py`**: BuilderResult and ErrorCode definitions
+- **`test_enhanced_builder.py`**: Comprehensive test suite
+
+### Enhanced Files
+- **`builder.py`**: Added ID tracking, remove/update/lookup methods
+  - Internal: `_generate_id()`, `_register_component()`, `_check_dependencies()`
+  - Public: `remove()`, `update_fifo()`, `lookup_by_id()`, `lookup_by_name()`, `get_all_ids()`
+  - All existing `add_*` methods now track IDs automatically
+- **`ProgramBuilderFromXML()`**: Standalone function for XML import
+
+## Backward Compatibility
+
+✅ **100% Backward Compatible** - All existing code continues to work unchanged:
+
+```python
+# This still works exactly as before
+builder = ProgramBuilder("my_design")
+builder.add_constant("N", 256)
+builder.add_tensor_type("line_ty", shape=["N"], dtype="int32")
+builder.add_fifo("of_in", "line_ty", 2)
+program = builder.build()
+```
+
+## C++ GUI Integration
+
+The enhanced features enable safe, trackable GUI operations:
+
+```cpp
+// Add component through GUI
+BuilderResult result = builder.add_fifo("of_in", "chunk_ty", 2);
+
+if (!result.success) {
+    if (result.error_code == ErrorCode::DUPLICATE_NAME) {
+        show_error_dialog(result.error_message);
+    }
+    return;
+}
+
+// Store ID for future operations
+std::string fifo_id = result.id;
+gui_registry[fifo_id] = gui_widget;
+```
+
+## Migration Guide
+
+### For GUI Integration
+
+```python
+# Create builder
+builder = ProgramBuilder("my_design")
+
+# Add component and get ID for GUI tracking
+fifo = builder.add_fifo("of_in", "chunk_ty", 2)
+result = builder.lookup_by_name('fifo', 'of_in')
+fifo_id = result.id  # Store in GUI
+
+# Later: Remove by ID
+remove_result = builder.remove(fifo_id)
+if not remove_result.success:
+    show_error(remove_result.error_message)
+```
+
+---
+
+**Version**: 2.0.0
+**Date**: 2025-01-27
+**Enhancement**: Interactive editing with ID tracking, removal, updates, and XML import
